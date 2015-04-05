@@ -1,0 +1,27 @@
+{
+  "name": "promise-light",
+  "version": "0.0.0",
+  "description": "promise light version",
+  "main": "lib/promise-light.js",
+  "dependencies": {
+    "base-class-extend": ">=0.0.14"
+  },
+  "devDependencies": {
+    "mocha": ">=2.2.1"
+  },
+  "keywords": [
+    "promise"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "lightspeedworks/promise-light"
+  },
+  "author": "LightSpeedC",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "license": "MIT"
+}
