@@ -7,6 +7,8 @@
     "base-class-extend": ">=0.0.14"
   },
   "devDependencies": {
+    "bluebird": ">=2.9.24",
+    "light-promise": ">=0.0.3",
     "mocha": ">=2.2.1"
   },
   "keywords": [
