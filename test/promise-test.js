@@ -223,6 +223,23 @@
             assert(false, 'ng: ' + err); });
       }); // it Promise.resolve string
 
+      it('Promise.resolve promise', function () {
+        return Promise.resolve(delay(10, 'ok')).then(
+          function (val) {
+            assert.equal(val, 'ok'); },
+          function (err) {
+            assert(false, 'ng: ' + err); });
+      }); // it Promise.resolve promise
+
+      Promise.accept &&
+      it('Promise.accept promise', function () {
+        return Promise.accept(delay(10, 'ok')).then(
+          function (val) {
+            assert.equal(val, 'ok'); },
+          function (err) {
+            assert(false, 'ng: ' + err); });
+      }); // it Promise.accept promise
+
       it('Promise.reject error', function () {
         return Promise.reject(new Error('ng')).then(
           function (val) {
