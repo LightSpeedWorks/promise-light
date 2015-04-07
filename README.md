@@ -10,7 +10,7 @@ Promise Specification
 ```js
 p = new Promise(
 	function setup(
-		function resolve(result) {},
+		function resolve(val) {},
 		function reject(err) {}
 	) {}
 );
@@ -20,7 +20,7 @@ p = new Promise(
 
 ```js
 p = p.then(
-	function resolve(result) {},
+	function resolve(val) {},
 	function reject(err) {});
 	= p.chain(?)  same as then *non-standard
 ```
