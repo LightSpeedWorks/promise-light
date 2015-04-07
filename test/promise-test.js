@@ -1,42 +1,99 @@
+(function () {
+  'use strict';
 
-  switch (process.argv[2]) {
-    case '1':
-      console.log('*** ../lib/promise-light');
-      global.Promise = require('../lib/promise-light');
-      break;
-    case '2':
-      console.log('*** light-promise');
-      global.Promise = require('light-promise');
-      break;
-    default:
-      console.log('*** standard Promise');
-      break;
-  }
+  var assert = require('assert');
 
-  // test テスト
-  var no = 0;
+  var promises = {
+    Promise: Promise,
+    'light-promise': require('light-promise'),
+    bluebird: require('bluebird'),
+    'promise-light': require('../lib/promise-light')
+  };
 
-  // timer
-  // msミリ秒後にこのpromiseを解決する
-  function timer(ms) {
-    return new Promise(function (resolve, reject) {
-      setTimeout(function () { resolve(++no); }, ms);
-    });
-  } // timer
+  var keys = Object.keys(promises);
+  keys.forEach(function (key) {
+    var Promise = promises[key];
 
-  // timer2
-  // msミリ秒後にこのpromiseを拒否する
-  function timer2(ms) {
-    return new Promise(function (resolve, reject) {
-      setTimeout(function () { reject(new Error('err ' + ++no)); }, ms);
-    });
-  } // timer2
+    // test テスト
+    var no = 0;
 
-  // timer3
-  // msミリ秒後にこのpromiseを解決または拒否する
-  function timer3(ms) {
-    return Math.random() > 0.5 ? timer(ms) : timer2(ms);
-  }
+    // msミリ秒後にこのpromiseを解決する
+    function delay(ms, val) {
+      return new Promise(function (resolve, reject) {
+        setTimeout(function () { resolve(val); }, ms);
+      });
+    } // delay
+
+    // msミリ秒後にこのpromiseを拒否する
+    function delayReject(ms, val) {
+      return new Promise(function (resolve, reject) {
+        setTimeout(function () { reject(new Error('err ' + val)); }, ms);
+      });
+    } // delayReject
+
+    // timer3
+    // msミリ秒後にこのpromiseを解決または拒否する
+    function timer3(ms) {
+      return Math.random() > 0.5 ? timer(ms) : timer2(ms);
+    }
+
+    describe('test promise "' + key + '"', function () {
+
+      if (!Promise) return;
+
+      it('Promise.resolve', function () {
+        return Promise.resolve('ok').then(
+          function (val) { assert(val, 'ok'); });
+      }); // it Promise.resolve
+
+      it('Promise.reject', function () {
+        return Promise.reject(new Error('ng')).then(null,
+          function (err) { assert(err.message, 'ng'); });
+      }); // it Promise.reject
+
+      it('Promise.all', function () {
+        return Promise.all([delay(10, 10), delay(20, 20), delay(30, 30)])
+          .then(function (val) {
+            assert.deepEqual(val, [10, 20, 30]);
+          }, function (err) {
+            assert(false, 'Promise.all fail: ' + err);
+          }); // all
+      }); // it Promise.all
+
+      it('Promise.all 2', function () {
+        return Promise.all([Promise.resolve(1), Promise.resolve(2), Promise.resolve(3)])
+          .then(function (val) {
+            assert.deepEqual(val, [1, 2, 3]);
+          }); // all
+      }); // it Promise.all 2
+
+      Promise.race &&
+      it('Promise.race', function () {
+        return Promise.race([delay(10, 10), delay(20, 20), delay(30, 30)])
+          .then(function (val) {
+            assert(val, 10);
+          }, function (err) {
+            assert(false, 'Promise.race fail: ' + err);
+          }); // race
+      }); // it Promise.race
+
+      Promise.race &&
+      it('Promise.race 2', function () {
+        return Promise.race([Promise.resolve(1), Promise.resolve(2), Promise.resolve(3)])
+          .then(function (val) {
+            assert(val, 1);
+          }); // race
+      }); // it Promise.race 2
+
+    }); // describe
+
+
+
+  }); // keys forEach
+
+})();
+
+/*
 
   // main メイン
   console.log('start');
@@ -64,32 +121,9 @@
     console.log('final');
   });
 
-  Promise.resolve('ok').then(function (x) { console.log('ok', x); });
-  Promise.reject(new Error('ng')).then(null, function (x) { console.log('ng', x); });
+*/
 
-  Promise.all([timer3(3100), timer3(3200), timer3(3300)])
-  .then(function (res) {
-    console.log('ok all', res);
-  }, function (res) {
-    console.log('ng all', res);
-  }); // all
-
-  Promise.race([timer3(3100), timer3(3200), timer3(3300)])
-  .then(function (res) {
-    console.log('ok race', res);
-  }, function (res) {
-    console.log('ng race', res);
-  });  // race
-
-  Promise.all([Promise.resolve(1), Promise.resolve(2), Promise.resolve(3)])
-  .then(function (results) {
-      console.log(results);  // [1, 2, 3]
-  }); // all
-
-  Promise.race([Promise.resolve(1), Promise.resolve(2), Promise.resolve(3)])
-  .then(function (result) {
-      console.log(result);  // 1
-  }); // race
+/*
 
   Promise.all([Promise.resolve(11), 22, Promise.resolve(33)])
   .then(function (results) {
@@ -115,3 +149,4 @@
       console.log('race []', error);  // undefined?
   }); // race
 
+*/
