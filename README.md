@@ -29,13 +29,13 @@ p = p.then(
 
 ```js
 p = p.catch(
-function reject(err) {});
+  function reject(err) {});
 ```
 
-### defer
+### // defer - not yet implementation
 
 ```js
-? = Promise.defer(?); *non-standard
+// ? = Promise.defer(?); *non-standard
 ```
 
 ### Promise.all
