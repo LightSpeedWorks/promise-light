@@ -3,6 +3,9 @@
 
   var assert = require('assert');
 
+  var g = Function('return this')();
+  if (typeof Promise === 'undefined') g.Promise = undefined;
+
   var promises = {
     Promise: /* native*/ Promise,
     // 'light-promise': require('light-promise'),
@@ -39,7 +42,8 @@
 
     describe('test promise "' + key + '"', function () {
 
-      if (!Promise) return;
+      if (typeof Promise === 'undefined')
+        return it('Promise not implemented');
 
       it('Promise setup sequence', function () {
         var seq = 0;
