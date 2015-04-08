@@ -242,7 +242,8 @@
             assert.equal(val, 'ok'); },
           function (err) {
             assert(false, 'ng: ' + err); });
-      }); // it Promise.accept promise
+      }) // it Promise.accept promise
+      || it('Promise.accept not implemented');
 
       it('Promise.reject error', function () {
         return Promise.reject(new Error('ng')).then(
@@ -277,7 +278,8 @@
               assert.deepEqual(val, []); },
             function (err) {
               assert(false, 'ng: ' + err); });
-      }); // it Promise.all []
+      }) // it Promise.all []
+      || it('Promise.all([]) not implemented');
 
       it('Promise.all resolves', function () {
         return Promise.all([Promise.resolve(1), Promise.resolve(2), Promise.resolve(3)])
@@ -296,7 +298,8 @@
               assert.deepEqual(val, [1, 2, 3]); },
             function (err) {
               assert(false, 'ng: ' + err); });
-      }); // it Promise.all values
+      }) // it Promise.all values
+      || it('Promise.all values not implemented');
 
       Promise.race &&
       it('Promise.race promises', function () {
@@ -306,7 +309,8 @@
               assert.equal(val, 10); },
             function (err) {
               assert(false, 'ng: ' + err); });
-      }); // it Promise.race promises
+      }) // it Promise.race promises
+      || it('Promise.race promises not implemented');
 
       Promise.race &&
       it('Promise.race resolves', function () {
@@ -316,7 +320,8 @@
               assert.equal(val, 1); },
             function (err) {
               assert(false, 'ng: ' + err); });
-      }); // it Promise.race resolves
+      }) // it Promise.race resolves
+      || it('Promise.race resolves not implemented');
 
       Promise.race &&
       it('Promise.race values', function () {
@@ -325,7 +330,8 @@
             assert.equal(val, 1); },
           function (err) {
             assert(false, 'ng: ' + err); });
-      }); // it Promise.race values
+      }) // it Promise.race values
+      || it('Promise.race values not implemented');
 
       Promise.race &&
       it('Promise.race []', function () {
@@ -340,7 +346,8 @@
               assert.equal(val, 123); },
             function (err) {
               assert(false, 'ng: ' + err); });
-      }); // it Promise.race []
+      }) // it Promise.race []
+      || it('Promise.race [] not implemented');
 
       it('promise sequence', function () {
         var seq = 0;
