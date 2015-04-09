@@ -3,11 +3,8 @@
 
   var assert = require('assert');
 
-  var g = Function('return this')();
-  if (typeof Promise === 'undefined') g.Promise = undefined;
-
   var promises = {
-    Promise: /* native*/ Promise,
+    Promise: /* native*/ typeof Promise !== 'undefined' ? Promise : undefined,
     // 'light-promise': require('light-promise'),
     bluebird: require('bluebird'),
     'promise-light': require('../lib/promise-light')
