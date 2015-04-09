@@ -3,9 +3,7 @@
   "version": "0.0.0",
   "description": "promise light version",
   "main": "lib/promise-light.js",
-  "dependencies": {
-    "base-class-extend": ">=0.0.14"
-  },
+  "dependencies": {},
   "devDependencies": {
     "bluebird": ">=2.9.24",
     "light-promise": ">=0.0.3",
