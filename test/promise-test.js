@@ -307,7 +307,7 @@
             function (err) {
               assert(false, 'ng: ' + err); });
       }) // it Promise.race promises
-      || it('Promise.race promises not implemented');
+      || it('Promise.race not implemented');
 
       Promise.race &&
       it('Promise.race resolves', function () {
@@ -317,8 +317,7 @@
               assert.equal(val, 1); },
             function (err) {
               assert(false, 'ng: ' + err); });
-      }) // it Promise.race resolves
-      || it('Promise.race resolves not implemented');
+      }); // it Promise.race resolves
 
       Promise.race &&
       it('Promise.race values', function () {
@@ -327,8 +326,7 @@
             assert.equal(val, 1); },
           function (err) {
             assert(false, 'ng: ' + err); });
-      }) // it Promise.race values
-      || it('Promise.race values not implemented');
+      }); // it Promise.race values
 
       Promise.race &&
       it('Promise.race []', function () {
@@ -343,8 +341,7 @@
               assert.equal(val, 123); },
             function (err) {
               assert(false, 'ng: ' + err); });
-      }) // it Promise.race []
-      || it('Promise.race [] not implemented');
+      }); // it Promise.race []
 
       it('promise sequence', function () {
         var seq = 0;
