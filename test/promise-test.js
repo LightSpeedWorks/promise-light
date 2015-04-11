@@ -145,10 +145,8 @@
         return new Promise(function (resolve, reject) {
           throw new Error('ng');
         }).then(
-          function (val) {
-            assert(false, 'ng: ' + val); },
-          function (err) {
-            assert.equal(err.message, 'ng'); });
+          function (val) { assert(false, 'ng: ' + val); },
+          function (err) { assert.equal(err.message, 'ng'); });
       }); // it Promise setup error
 
       it('Promise setup unhandled error', function () {
