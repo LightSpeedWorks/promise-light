@@ -5,9 +5,9 @@
   "main": "lib/promise-light.js",
   "dependencies": {},
   "devDependencies": {
-    "bluebird": ">=2.9.24",
+    "bluebird": ">=2.9.25",
     "light-promise": ">=0.0.3",
-    "mocha": ">=2.2.1"
+    "mocha": ">=2.2.4"
   },
   "keywords": [
     "promise"
