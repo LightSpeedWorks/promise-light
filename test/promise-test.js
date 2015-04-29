@@ -414,6 +414,20 @@
       }) // it Promise.defer without context
       || it('Promise.defer without conext not implemented');
 
+      key !== 'bluebird' &&
+      it('Promise keys match', function () {
+        var keys = Object.keys(Promise).sort().join(',');
+        assert.equal(keys, '');
+      }) // it Promise keys
+      || it('Promise keys not match');
+
+      key !== 'bluebird' &&
+      it('Promise own property names match', function () {
+        var keys = Object.getOwnPropertyNames(Promise).sort().join(',');
+        assert.equal(keys, 'accept,all,arguments,caller,defer,length,name,prototype,race,reject,resolve');
+      }) // it Promise own property names
+      || it('Promise own property names not match');
+
     }); // describe
 
 
