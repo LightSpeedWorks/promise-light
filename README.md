@@ -28,7 +28,7 @@ http://lightspeedworks.github.io/promise-light/promise-light.js
 or
 
 ```js
-var Promise = Promise || require('promise-light');
+var Promise = this.Promise || require('promise-light');
 ```
 
 # USAGE:
