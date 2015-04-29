@@ -358,6 +358,62 @@
             function (err) { assert(false, 'ng: ' + err); ++seq; });
       }); // it promise sequence
 
+      Promise.defer &&
+      it('Promise.defer', function () {
+        var dfd = Promise.defer();
+        setTimeout(function (val) { dfd.resolve(val); }, 10, 'ok');
+        return dfd.promise.then(
+          function (val) {
+            assert.equal(val, 'ok'); },
+          function (err) {
+            assert(false, 'ng: ' + err); });
+      }) // it Promise.defer
+      || it('Promise.defer not implemented');
+
+      Promise.defer &&
+      it('Promise.defer promise constructor is Promise', function () {
+        var dfd = Promise.defer();
+        dfd.resolve();
+        assert.equal(dfd.promise.constructor, Promise);
+      }); // it Promise.defer
+
+      Promise.defer &&
+      function () {
+        var dfd = Promise.defer();
+        dfd.resolve();
+        return dfd.constructor === Object;
+      } () &&
+      it('Promise.defer constructor is Object', function () {
+        var dfd = Promise.defer();
+        dfd.resolve();
+        assert.equal(dfd.constructor, Object);
+      }) // it Promise.defer constructor is Object
+      || it('Promise.defer constructor is not Object');
+
+      Promise.defer &&
+      function () {
+        var dfd = Promise.defer();
+        var res = dfd.resolve;
+        try { res(); return true; }
+        catch (e) { return false; }
+      } () &&
+      it('Promise.defer without context', function () {
+        var dfd = Promise.defer();
+        setTimeout(function (val) {
+            var res = dfd.resolve;
+            try { res(val); }
+            catch (e) {
+              dfd.reject(e);
+            }
+          }, 10, 'ok');
+        return dfd.promise.then(
+          function (val) {
+            assert.equal(val, 'ok'); },
+          function (err) {
+            assert(false, 'ng: ' + err); });
+      }) // it Promise.defer without context
+      || it('Promise.defer without conext not implemented');
+
     }); // describe
 
 
