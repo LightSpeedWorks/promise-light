@@ -1,18 +1,19 @@
 (function () {
   'use strict';
 
-  var assert = require('assert');
+  var assert = this.assert || require('assert');
 
   var promises = {
-    Promise: /* native*/ typeof Promise !== 'undefined' ? Promise : undefined,
+    Promise: /* native*/ typeof Promise === 'function' ? Promise : undefined,
     // 'light-promise': require('light-promise'),
-    bluebird: require('bluebird'),
-    'promise-light': require('../lib/promise-light')
+    bluebird: this.bluebird || require('bluebird'),
+    'promise-light': this.PromiseLight || require('../lib/promise-light')
   };
 
   var keys = Object.keys(promises);
   keys.forEach(function (key) {
     var Promise = promises[key];
+    if (!Promise) return;
 
     // test テスト
     var no = 0;
@@ -434,7 +435,7 @@
 
   }); // keys forEach
 
-})();
+}).call(this);
 
 /*
 
