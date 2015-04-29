@@ -1,6 +1,6 @@
 {
   "name": "promise-light",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "promise light version",
   "main": "lib/promise-light.js",
   "dependencies": {},

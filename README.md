@@ -1,6 +1,37 @@
-promise-light
+[promise-light](https://www.npmjs.org/package/promise-light) - npm
 ====
 
+  `promise-light` is standard ES6 Promise implementation.
+
+# INSTALL:
+
+```bash
+$ npm install promise-light --save
+```
+
+or
+
+http://lightspeedworks.github.io/promise-light/promise-light.js
+
+```html
+<script src="http://lightspeedworks.github.io/promise-light/promise-light.js"></script>
+```
+
+# PREPARATION:
+
+```js
+(function (Promise) {
+  // you can use Promise
+})(this.Promise || require('promise-light'));
+```
+
+or
+
+```js
+var Promise = Promise || require('promise-light');
+```
+
+# USAGE:
 
 Promise Specification
 ----
@@ -22,20 +53,13 @@ p = new Promise(
 p = p.then(
 	function resolve(val) {},
 	function reject(err) {});
-	= p.chain(?)  same as then *non-standard
 ```
 
 ### promise.catch
 
 ```js
 p = p.catch(
-  function reject(err) {});
-```
-
-### // defer - not yet implementation
-
-```js
-// ? = Promise.defer(?); *non-standard
+	function reject(err) {});
 ```
 
 ### Promise.all
@@ -65,5 +89,16 @@ p = Promise.reject(err);
 ### Promise.accept
 
 ```js
-p = Promise.accept(result); *non-standard
+p = Promise.accept(result);
 ```
+
+### Promise.defer
+
+```js
+dfd = Promise.defer();
+// -> {promise, resolve, reject}
+```
+
+# LICESE:
+
+  MIT
