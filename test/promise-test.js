@@ -10,6 +10,45 @@
     'promise-light': this.PromiseLight || require('../lib/promise-light')
   };
 
+  // Object.keys for ie8
+  if (!Object.keys)
+    Object.keys = function keys(obj) {
+      var keys = [];
+      for (var i in obj)
+        if (obj.hasOwnProperty(i)) keys.push(i);
+      return keys;
+    };
+
+  // Object.getOwnPropertyNames for ie8
+  if (!Object.getOwnPropertyNames)
+    Object.getOwnPropertyNames = Object.keys;
+
+  // Array.prototype.forEach for ie8
+  if (!Array.prototype.forEach)
+    Array.prototype.forEach = function forEach(fn) {
+      for (var i = 0, n = this.length; i < n; ++i)
+        fn(this[i], i, this);
+    };
+
+  // Array.prototype.map for ie8
+  if (!Array.prototype.map)
+    Array.prototype.map = function map(fn) {
+      var arr = [];
+      for (var i = 0, n = this.length; i < n; ++i)
+        arr.push(fn(this[i], i, this));
+      return arr;
+    };
+
+  // Array.prototype.filter for ie8
+  if (!Array.prototype.filter)
+    Array.prototype.filter = function filter(fn) {
+      var arr = [];
+      for (var i = 0, n = this.length; i < n; ++i)
+        if (fn(this[i], i, this))
+          arr.push(this[i]);
+      return arr;
+    };
+
   var keys = Object.keys(promises);
   keys.forEach(function (key) {
     var Promise = promises[key];
@@ -155,7 +194,7 @@
         new Promise(function (resolve, reject) {
           throw new Error('ng');
         }).then(function (val) { assert(false, 'ng: ' + val); })
-        .catch(function (err) { assert.equal(err.message, 'ng'); called = true; } );
+        ['catch'](function (err) { assert.equal(err.message, 'ng'); called = true; } );
         return delay(10, 'ok').then(
           function (val) {
             assert(called, 'called?'); });
@@ -362,10 +401,10 @@
       Promise.defer &&
       it('Promise.defer', function () {
         var dfd = Promise.defer();
-        setTimeout(function (val) { dfd.resolve(val); }, 10, 'ok');
+        setTimeout(function () { dfd.resolve('ok'); }, 10);
         return dfd.promise.then(
           function (val) {
-            assert.equal(val, 'ok'); },
+            assert.equal(val, 'ok', 'Promise defer not ok'); },
           function (err) {
             assert(false, 'ng: ' + err); });
       }) // it Promise.defer
@@ -400,13 +439,13 @@
       } () &&
       it('Promise.defer without context', function () {
         var dfd = Promise.defer();
-        setTimeout(function (val) {
+        setTimeout(function () {
             var res = dfd.resolve;
-            try { res(val); }
+            try { res('ok'); }
             catch (e) {
               dfd.reject(e);
             }
-          }, 10, 'ok');
+          }, 10);
         return dfd.promise.then(
           function (val) {
             assert.equal(val, 'ok'); },
@@ -419,6 +458,7 @@
       it('Promise keys match', function () {
         var keys = Object.keys(Promise).sort().join(',');
         assert(keys === 'all,race,reject,resolve' ||
+               keys === 'accept,all,defer,race,reject,resolve' ||
                keys === '', 'Promise keys not match: keys = ' + keys);
       }) // it Promise keys
       || it('Promise keys not match');
