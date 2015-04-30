@@ -1,60 +1,15 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=Edge, Chrome=1">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Cache-Control" content="no-cache">
+<meta http-equiv="Expires" content="Thu, 01 Dec 1994 16:00:00 GMT">
+
 <script src="../lib/promise-light.js"></script>
+<script src="../lib/assert.js"></script>
+<script src="../lib/describe-it.js"></script>
 <script>
-  this.bluebird = null;
-
-  function require() {
-    return null;
-  }
-
-  var s1 = [];
-  function describe(msg1, fn1) {
-    //console.info(msg1);
-    s1.push([msg1, fn1]);
-  }
-
-  var it;
-
-  // nextTick(fn)
-  var nextTick = typeof setImmediate === 'function' ? setImmediate :
-    typeof process === 'object' && process && typeof process.nextTick === 'function' ? process.nextTick :
-    function nextTick(fn) { setTimeout(fn, 0); };
-
-  nextTick(function t1() {
-    var a = s1.shift();
-    if (!a) return;
-    var msg1 = a[0], fn1 = a[1];
-
-    var s2 = [];
-    it = function it(msg2, fn2) {
-      //console.info('    ' + msg2);
-      s2.push([msg2, fn2]);
-    }
-
-    var p = fn1();
-    if (p && p.then)
-      return p.then(
-        function (val) { console.info(msg1, val);  nextTick(t1); },
-        function (err) { console.error(msg1, err); nextTick(t1); });
-    console.info(msg1);
-
-    nextTick(function t2() {
-      var a = s2.shift();
-      if (!a) return nextTick(t1);
-      var msg2 = a[0], fn2 = a[1];
-
-      if (arguments.length === 2) {
-        var p = fn2();
-        if (p && p.then)
-          return p.then(
-            function (val) { console.info('    ' + msg2, val);  nextTick(t2); },
-            function (err) { console.error('    ' + msg2, err); nextTick(t2); });
-      }
-
-      console.info('    ' + msg2);
-      nextTick(t2);
-
-    });
-  });
-
+this.bluebird = null;
+this.require = function require() { return null; };
 </script>
 <script src="promise-test.js"></script>
