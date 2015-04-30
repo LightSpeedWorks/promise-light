@@ -2,6 +2,8 @@
 ====
 
   `promise-light` is standard ES6 Promise implementation.
+  it supports browser Chrome, Firefox, ie11, ie9, ie8.
+  also supports node.js/io.js.
 
 # INSTALL:
 
