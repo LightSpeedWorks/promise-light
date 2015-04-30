@@ -7,6 +7,7 @@
     Promise: /* native*/ typeof Promise === 'function' ? Promise : undefined,
     // 'light-promise': require('light-promise'),
     bluebird: this.bluebird || require('bluebird'),
+    'es6-promise': require('es6-promise') && require('es6-promise').Promise,
     'promise-light': this.PromiseLight || require('../lib/promise-light')
   };
 
