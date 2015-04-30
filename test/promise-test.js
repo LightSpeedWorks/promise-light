@@ -75,7 +75,7 @@
       it('Promise setup unhandled reject', function () {
         return new Promise(function (resolve, reject) {
           new Promise(function (res, rej) {
-            rej(new Error('ng'));
+            rej(new Error('ng: unhandled reject'));
             resolve('ok');
           });
         });
@@ -176,7 +176,7 @@
                 assert(false, 'ng: ' + err); }); },
             function (err) {
               assert(false, 'ng: ' + err); });
-        return delay(20, 'ok').then(
+        return delay(100, 'ok').then(
           function (val) {
             assert(called, 'called?'); });
       }); // it Promise setup resolve delayed then once
@@ -202,7 +202,7 @@
                 assert(false, 'ng: ' + err); }); },
             function (err) {
               assert(false, 'ng: ' + err); });
-        return delay(20, 'ok').then(
+        return delay(100, 'ok').then(
           function (val) {
             assert(called, 'called?'); });
       }); // it Promise setup resolve delayed then twice
@@ -418,14 +418,22 @@
       key !== 'bluebird' &&
       it('Promise keys match', function () {
         var keys = Object.keys(Promise).sort().join(',');
-        assert.equal(keys, '');
+        assert(keys === 'all,race,reject,resolve' ||
+               keys === '', 'Promise keys not match: keys = ' + keys);
       }) // it Promise keys
       || it('Promise keys not match');
 
       key !== 'bluebird' &&
       it('Promise own property names match', function () {
-        var keys = Object.getOwnPropertyNames(Promise).sort().join(',');
-        assert.equal(keys, 'accept,all,arguments,caller,defer,length,name,prototype,race,reject,resolve');
+        function f(x) {
+          return x !== 'arguments'  && x !== 'caller' &&
+                 x !== 'length'     && x !== 'name'   &&
+                 x !== 'prototype'  && x !== 'toString';
+        }
+        var keys = Object.getOwnPropertyNames(Promise).filter(f).sort().join(',');
+        assert(keys === 'accept,all,defer,race,reject,resolve' ||
+               keys === 'all,race,reject,resolve',
+               'Promise own property names match: keys = ' + keys);
       }) // it Promise own property names
       || it('Promise own property names not match');
 
