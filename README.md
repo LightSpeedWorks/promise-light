@@ -63,6 +63,8 @@ how to make promise.
 p = new Promise(
   function setup(resolve, reject) {
     // async process -> resolve(value) or reject(error)
+    try { resolve('value'); }
+    catch (error) { reject(error); }
   }
 );
 // setup(
