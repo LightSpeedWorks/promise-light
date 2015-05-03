@@ -5,7 +5,11 @@
   it supports browser Chrome, Firefox, ie11, ie9, ie8.<br/>
   also supports node.js/io.js.
 
+  if you have native Promise then use it.
+
 # INSTALL:
+
+for node.js or io.js
 
 ```bash
 $ npm install promise-light --save
@@ -13,15 +17,18 @@ $ npm install promise-light --save
 
 or
 
-http://lightspeedworks.github.io/promise-light/promise-light.js
+for browsers
+
+[https://lightspeedworks.github.io/promise-light/promise-light.js](https://lightspeedworks.github.io/promise-light/promise-light.js)
 
 ```html
-<script src="http://lightspeedworks.github.io/promise-light/promise-light.js"></script>
+<script src="https://lightspeedworks.github.io/promise-light/promise-light.js"></script>
 ```
 
 # PREPARE:
 
 you can use Promise. (native Promise or promise-light)
+
 ```js
 (function (Promise) {
   'use strict';
@@ -32,11 +39,13 @@ you can use Promise. (native Promise or promise-light)
 or
 
 use native Promise or promise-light.
+
 ```js
 var Promise = this.Promise || require('promise-light');
 ```
 
 native Promise is overwritten by promise-light.
+
 ```js
 var Promise = this.PromiseLight || require('promise-light');
 ```
@@ -52,12 +61,12 @@ how to make promise.
 
 ```js
 p = new Promise(
-	function setup(resolve, reject) {
+  function setup(resolve, reject) {
     // async process -> resolve(value) or reject(error)
   }
 );
 // setup(
-//	function resolve(value) {},
+//  function resolve(value) {},
 //  function reject(error) {})
 ```
 
@@ -65,7 +74,7 @@ example
 
 ```js
 var p = new Promise(
-	function setup(resolve, reject) {
+  function setup(resolve, reject) {
     setTimeout(function () {
       if (Math.random() < 0.5) resolve('value');
       else reject(new Error('error'));
@@ -83,18 +92,18 @@ how to use promise.
 
 ```js
 p = p.then(
-	function resolved(value) {},
-	function rejected(error) {});
+  function resolved(value) {},
+  function rejected(error) {});
 ```
 
 example
 
 ```js
 p = p.then(
-	function (value) {
+  function (value) {
     console.info(value);
   },
-	function (error) {
+  function (error) {
     console.error(error);
   });
 ```
@@ -105,7 +114,7 @@ how to catch error from promise.
 
 ```js
 p = p.catch(
-	function reject(error) {});
+  function reject(error) {});
 ```
 
 or
@@ -113,7 +122,7 @@ or
 when you use old browser
 ```js
 p = p['catch'](
-	function reject(error) {});
+  function reject(error) {});
 ```
 
 ### Promise.all
@@ -126,7 +135,7 @@ p = Promise.all([promise, ...]);
 
 ### Promise.race
 
-get first value or error of finished promise.
+get value or error of first finished promise.
 
 ```js
 p = Promise.race([promise, ...]);
