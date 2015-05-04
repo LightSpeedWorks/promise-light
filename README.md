@@ -88,7 +88,7 @@ p.then(console.info.bind(console),
        console.error.bind(console));
 ```
 
-### promise.then
+### promise.then(onFulfilled, onRejected)
 
 how to use promise.
 
@@ -110,13 +110,13 @@ p = p.then(
   });
 ```
 
-### promise.catch
+### promise.catch(onRejected)
 
 how to catch error from promise.
 
 ```js
 p = p.catch(
-  function reject(error) {});
+  function rejected(error) {});
 ```
 
 or
@@ -124,10 +124,10 @@ or
 when you use old browser
 ```js
 p = p['catch'](
-  function reject(error) {});
+  function rejected(error) {});
 ```
 
-### Promise.all
+### Promise.all(iterable or array)
 
 wait for all promises.
 
@@ -135,7 +135,7 @@ wait for all promises.
 p = Promise.all([promise, ...]);
 ```
 
-### Promise.race
+### Promise.race(iterable or array)
 
 get value or error of first finished promise.
 
@@ -143,7 +143,7 @@ get value or error of first finished promise.
 p = Promise.race([promise, ...]);
 ```
 
-### Promise.resolve
+### Promise.resolve(value or promise)
 
 get resolved promise.
 
@@ -151,7 +151,7 @@ get resolved promise.
 p = Promise.resolve(value or promise);
 ```
 
-### Promise.reject
+### Promise.reject(error)
 
 get rejected promise.
 
@@ -159,7 +159,7 @@ get rejected promise.
 p = Promise.reject(error);
 ```
 
-### Promise.accept
+### Promise.accept(value)
 
 get resolved (accepted) promise.
 
@@ -167,7 +167,7 @@ get resolved (accepted) promise.
 p = Promise.accept(value);
 ```
 
-### Promise.defer
+### Promise.defer()
 
 make deferred object with promise.
 
