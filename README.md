@@ -102,10 +102,10 @@ example
 
 ```js
 p = p.then(
-  function (value) {
+  function resolved(value) {
     console.info(value);
   },
-  function (error) {
+  function rejected(error) {
     console.error(error);
   });
 ```
