@@ -478,8 +478,75 @@
       }) // it Promise own property names
       || it('Promise own property names not match');
 
-    }); // describe
+      typeof Symbol === 'function' && Symbol && Symbol.iterator &&
+      it('ES6 iterator', function () {
+        var a = {}, b = {};
+        a[Symbol.iterator] = iterator;
+        b[Symbol.iterator] = iterator;
+        Promise.all(a).then(
+          function (values) { assert.deepEqual(values, [20, 40, 60]); },
+          function (error) { assert(false, 'Error: ' + error); });
+        Promise.race(b).then(
+          function (values) { assert.deepEqual(values, 20); },
+          function (error) { assert(false, 'Error: ' + error); });
 
+        function iterator() {
+          var i = 0;
+          var iter = {
+            next: function () {
+              i += 20;
+              return i <= 60 ? {value: i} : {done: true};
+            }
+          };
+          return iter;
+        }
+      }); // it ES6 iterator
+
+      it('iterator values', function () {
+        Promise.all(iterator()).then(
+          function (values) { assert.deepEqual(values, [20, 40, 60]); },
+          function (error) { assert(false, 'Error: ' + error); });
+        Promise.race(iterator()).then(
+          function (values) { assert.deepEqual(values, 20); },
+          function (error) { assert(false, 'Error: ' + error); });
+
+        function iterator() {
+          var i = 0;
+          var iter = {
+            next: function () {
+              i += 20;
+              return i <= 60 ? {value: i} : {done: true};
+            }
+          };
+          if (typeof Symbol === 'function' && Symbol && Symbol.iterator)
+            iter[Symbol.iterator] = iterator;
+          return iter;
+        }
+      }); // it iterator
+
+      it('iterator promises', function () {
+        Promise.all(iterator()).then(
+          function (values) { assert.deepEqual(values, [20, 40, 60]); },
+          function (error) { assert(false, 'Error: ' + error); });
+        Promise.race(iterator()).then(
+          function (values) { assert.deepEqual(values, 20); },
+          function (error) { assert(false, 'Error: ' + error); });
+
+        function iterator() {
+          var i = 0;
+          var iter = {
+            next: function () {
+              i += 20;
+              return i <= 60 ? {value: delay(i, i)} : {done: true};
+            }
+          };
+          if (typeof Symbol === 'function' && Symbol && Symbol.iterator)
+            iter[Symbol.iterator] = iterator;
+          return iter;
+        }
+      }); // it iterator
+
+    }); // describe
 
 
   }); // keys forEach
