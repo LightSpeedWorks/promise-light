@@ -500,7 +500,8 @@
           };
           return iter;
         }
-      }); // it ES6 iterator
+      }) // it ES6 iterator
+      || it('ES6 iterator is not supported');
 
       it('iterator values', function () {
         Promise.all(iterator()).then(
