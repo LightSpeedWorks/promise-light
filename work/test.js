@@ -8,7 +8,11 @@
     // 'light-promise': require('light-promise'),
     bluebird: this.bluebird || require('bluebird'),
     'es6-promise': require('es6-promise') && require('es6-promise').Promise,
-    'promise-light': this.PromiseLight || require('../lib/promise-light4')
+    'promise-light': this.PromiseLight || require('../lib/promise-light'),
+    'promise-light2': require('./promise-light2'),
+    'promise-light3': require('./promise-light3'),
+    'promise-light4': require('./promise-light4'),
+    'promise-light5': require('./promise-light5'),
   };
 
   // Object.keys for ie8

@@ -13,11 +13,11 @@ this.PromiseLight = function () {
   // Function.prototype.bind for ie8
   var slice = Array.prototype.slice;
   if (!Function.prototype.bind)
-    Function.prototype.bind = function bind($ctx) {
+    Function.prototype.bind = function bind(ctx) {
       var args = slice.call(arguments, 1);
       var fn = this;
       return function () {
-        return fn.apply($ctx, slice.call(args).concat(slice.call(arguments)));
+        return fn.apply(ctx, slice.call(args).concat(slice.call(arguments)));
       };
     };
 
@@ -64,8 +64,8 @@ this.PromiseLight = function () {
   var defProp = function (obj) {
     if (!Object.defineProperty) return null;
     try {
-      Object.defineProperty(obj, 'prop', {value: 'value'});
-      return obj.prop === 'value' ? Object.defineProperty : null;
+      Object.defineProperty(obj, 'prop', {value: 'str'});
+      return obj.prop === 'str' ? Object.defineProperty : null;
     } catch (err) { return null; }
   } ({});
 
@@ -95,14 +95,12 @@ this.PromiseLight = function () {
     var resolve = function resolve(val) {
       if (this.$state === UNRESOLVED)
         this.$state = RESOLVED, this.$result = val, nextTick($fire);
-      return this;
     }.bind(this);
 
     // reject(err)
     var reject = function reject(err) {
       if (this.$state === UNRESOLVED)
         this.$state = REJECTED, this.$result = err, nextTick($fire);
-      return this;
     }.bind(this);
 
     if (setup && typeof setup === 'function') {
@@ -191,10 +189,9 @@ this.PromiseLight = function () {
 
   // Promise.resolve(val)
   setValue(Promise, 'resolve', function resolve(val) {
-    return new Promise().resolve(val);
-//    return new Promise(
-//      function promiseResolve(resolve, reject) {
-//        resolve(val); });
+    return new Promise(
+      function promiseResolve(resolve, reject) {
+        resolve(val); });
   }); // resolve
 
   // Promise.reject(err)
