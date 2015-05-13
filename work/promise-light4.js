@@ -198,7 +198,7 @@ this.PromiseLight = function () {
         try {
           if ($ctx.$state === RESOLVED) {
             if (!completed) return resolve($ctx.$result);
-            if (isPromise($ctx.$result))
+            if ($ctx.$result instanceof Promise || isPromise($ctx.$result))
               return $ctx.$result.then(complete, reject);
           }
           else { // $ctx.$state === REJECTED
@@ -252,7 +252,7 @@ this.PromiseLight = function () {
         promises.forEach(function (p, i) {
           function complete(val) {
             res[i] = val; if (--n === 0) resolve(res); }
-          if (isPromise(p))
+          if (p instanceof Promise || isPromise(p))
             return p.then(complete, reject);
           complete(p);
         }); // promises.forEach
@@ -268,7 +268,7 @@ this.PromiseLight = function () {
     return new Promise(
       function promiseRace(resolve, reject) {
         promises.forEach(function (p) {
-          if (isPromise(p))
+          if (p instanceof Promise || isPromise(p))
             return p.then(resolve, reject);
           resolve(p);
         }); // promises.forEach

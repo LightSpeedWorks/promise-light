@@ -164,29 +164,19 @@ this.PromiseLight = function () {
     }
 
     // then(resolved, rejected)
-    setConst(this, 'then', function then(resolved, rejected) {
+    setValue(this, 'then', function then(resolved, rejected) {
       if (resolved != null && typeof resolved !== 'function')
         throw new TypeError('resolved must be a function');
       if (rejected != null && typeof rejected !== 'function')
         throw new TypeError('rejected must be a function');
       return new Promise(PROMISE_THEN, resolved, rejected, $queue, $state, $fire);
-//      return new Promise(function (resolve, reject) {
-//        $queue.push({resolved:resolved, rejected:rejected,
-//                     resolve: resolve,  reject:  reject});
-//        if ($state !== UNRESOLVED) nextTick($fire);
-//      });
     }); // then
 
     // catch(rejected)
-    setConst(this, 'catch', function caught(rejected) {
+    setValue(this, 'catch', function caught(rejected) {
       if (rejected != null && typeof rejected !== 'function')
         throw new TypeError('rejected must be a function');
       return new Promise(PROMISE_THEN, undefined, rejected, $queue, $state, $fire);
-//      return new Promise(function (resolve, reject) {
-//        $queue.push({resolved:undefined, rejected:rejected,
-//                     resolve: resolve,   reject:  reject});
-//        if ($state !== UNRESOLVED) nextTick($fire);
-//      });
     }); // catch
 
     // $fire
@@ -202,7 +192,7 @@ this.PromiseLight = function () {
           try {
             if ($state === RESOLVED) {
               if (!completed) return resolve($result);
-              if (isPromise($result))
+              if ($result instanceof Promise || isPromise($result))
                 return $result.then(complete, reject);
             }
             else { // $state === REJECTED
@@ -233,19 +223,11 @@ this.PromiseLight = function () {
 
   // Promise.resolve(val)
   setValue(Promise, 'resolve', function resolve(val) {
-    return new Promise(PROMISE_RESOLVE, val);
-//    return new Promise(
-//      function promiseResolve(resolve, reject) {
-//        resolve(val); });
-  }); // resolve
+    return new Promise(PROMISE_RESOLVE, val); });
 
   // Promise.reject(err)
   setValue(Promise, 'reject', function reject(err) {
-    return new Promise(PROMISE_REJECT, err);
-//    return new Promise(
-//      function promiseReject(resolve, reject) {
-//        reject(err); });
-  }); // reject
+    return new Promise(PROMISE_REJECT, err); });
 
   // Promise.all([p, ...])
   setValue(Promise, 'all', function all(promises) {
@@ -289,14 +271,8 @@ this.PromiseLight = function () {
 
   // Promise.defer()
   setValue(Promise, 'defer', function defer() {
-//    var resolve, reject;
     var p = new Promise();
     return {promise: p, resolve: p.resolve, reject: p.reject};
-//    var p = new Promise(function (res, rej) {
-//      resolve = res;
-//      reject = rej;
-//    });
-    return {promise: p, resolve: resolve, reject: reject};
   });
 
   if (typeof module === 'object' && module.exports)
