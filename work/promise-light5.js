@@ -10,6 +10,19 @@ this.PromiseLight = function () {
   var COLOR_ERROR  = typeof window !== 'undefined' ? '' : '\x1b[35m';
   var COLOR_NORMAL = typeof window !== 'undefined' ? '' : '\x1b[m';
 
+/*
+  // Function.prototype.bind for ie8
+  var slice = Array.prototype.slice;
+  if (!Function.prototype.bind)
+    Function.prototype.bind = function bind(ctx) {
+      var args = slice.call(arguments, 1);
+      var fn = this;
+      return function () {
+        return fn.apply(ctx, slice.call(args).concat(slice.call(arguments)));
+      };
+    };
+*/
+
   // Queue
   function Queue() {
     this.tail = this.head = null;
@@ -164,7 +177,7 @@ this.PromiseLight = function () {
     }
 
     // then(resolved, rejected)
-    setValue(this, 'then', function then(resolved, rejected) {
+    setConst(this, 'then', function then(resolved, rejected) {
       if (resolved != null && typeof resolved !== 'function')
         throw new TypeError('resolved must be a function');
       if (rejected != null && typeof rejected !== 'function')
@@ -173,7 +186,7 @@ this.PromiseLight = function () {
     }); // then
 
     // catch(rejected)
-    setValue(this, 'catch', function caught(rejected) {
+    setConst(this, 'catch', function caught(rejected) {
       if (rejected != null && typeof rejected !== 'function')
         throw new TypeError('rejected must be a function');
       return new Promise(PROMISE_THEN, undefined, rejected, $queue, $state, $fire);
