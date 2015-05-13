@@ -10,6 +10,19 @@ this.PromiseLight = function () {
   var COLOR_ERROR  = typeof window !== 'undefined' ? '' : '\x1b[35m';
   var COLOR_NORMAL = typeof window !== 'undefined' ? '' : '\x1b[m';
 
+/*
+  // Function.prototype.bind for ie8
+  var slice = Array.prototype.slice;
+  if (!Function.prototype.bind)
+    Function.prototype.bind = function bind(ctx) {
+      var args = slice.call(arguments, 1);
+      var fn = this;
+      return function () {
+        return fn.apply(ctx, slice.call(args).concat(slice.call(arguments)));
+      };
+    };
+*/
+
   // Queue
   function Queue() {
     this.tail = this.head = null;
@@ -109,27 +122,48 @@ this.PromiseLight = function () {
         writable: true, configurable: true}); } :
     function setValue(obj, prop, val) { obj[prop] = val; };
 
+  function PROMISE_RESOLVE() {}
+  function PROMISE_REJECT() {}
+  function PROMISE_THEN() {}
+
   // Promise(setup(resolve, reject))
   function Promise(setup) {
     var $ctx = this;
-/*
-    setValue(this, '$state', UNRESOLVED);
-    setValue(this, '$queue', new Queue());
-    setValue(this, '$result', undefined);
-    setValue(this, '$handled', false);
-*/
-    var $this = this;
-    var $ctx = {
-      $state: UNRESOLVED,
-      $queue: new Queue(),
-      $result: undefined,
-      $handled: false,
-      $fire: function () { $this.$fire(); },
-      $checkUnhandledRejection: function () { $this.$checkUnhandledRejection(); },
-    };
-    setValue(this, '$ctx', $ctx);
+    this.$state = UNRESOLVED;
+    this.$queue = new Queue();
+    this.$result = undefined;
+    this.$handled = false;
+    var $fire = function () { $ctx.$fire(); };
 
-    var $fire = $ctx.$fire;
+    if (setup === PROMISE_RESOLVE) {
+      this.$state = RESOLVED;
+      this.$result = arguments[1];
+    }
+    else if (setup === PROMISE_REJECT) {
+      this.$state = REJECTED;
+      this.$result = arguments[1];
+    }
+    else {
+
+      if (setup === PROMISE_THEN) {
+        arguments[3].push({resolved:arguments[1], rejected:arguments[2],
+                           resolve: resolve,      reject:  reject});
+        if (arguments[4] !== UNRESOLVED) nextTick(arguments[5]);
+      }
+      else if (setup && typeof setup === 'function') {
+        try {
+          setup.call(this, resolve, reject);
+        } catch (err) {
+          reject(err);
+        }
+      }
+      else {
+        // no setup, public promise
+        setConst(this, 'resolve', resolve);
+        setConst(this, 'reject',  reject);
+      }
+
+    }
 
     // resolve(val)
     function resolve(val) {
@@ -143,19 +177,6 @@ this.PromiseLight = function () {
         $ctx.$state = REJECTED, $ctx.$result = err, nextTick($fire);
     }
 
-    if (setup && typeof setup === 'function') {
-      try {
-        setup.call(this, resolve, reject);
-      } catch (err) {
-        reject(err);
-      }
-    }
-    else {
-      // no setup, public promise
-      setConst(this, 'resolve', resolve);
-      setConst(this, 'reject',  reject);
-    }
-
   } // Promise
 
   // then(resolved, rejected)
@@ -164,29 +185,23 @@ this.PromiseLight = function () {
       throw new TypeError('resolved must be a function');
     if (rejected != null && typeof rejected !== 'function')
       throw new TypeError('rejected must be a function');
-    var $ctx = this.$ctx;
-    return new Promise(function (resolve, reject) {
-      $ctx.$queue.push({resolved:resolved, rejected:rejected,
-                  resolve:resolve, reject:reject});
-      if ($ctx.$state !== UNRESOLVED) nextTick(function () { $ctx.$fire(); });
-    });
+    var $ctx = this;
+    return new Promise(PROMISE_THEN, resolved, rejected, $ctx.$queue, $ctx.$state,
+      function () { $ctx.$fire(); });
   }); // then
 
   // catch(rejected)
   setValue(Promise.prototype, 'catch', function caught(rejected) {
     if (rejected != null && typeof rejected !== 'function')
       throw new TypeError('rejected must be a function');
-    var $ctx = this.$ctx;
-    return new Promise(function (resolve, reject) {
-      $ctx.$queue.push({resolved:undefined, rejected:rejected,
-                  resolve:resolve, reject:reject});
-      if ($ctx.$state !== UNRESOLVED) nextTick(function () { $ctx.$fire(); });
-    });
+    var $ctx = this;
+    return new Promise(PROMISE_THEN, undefined, rejected, $ctx.$queue, $ctx.$state,
+      function () { $ctx.$fire(); });
   }); // catch
 
   // $fire
   setValue(Promise.prototype, '$fire', function $fire() {
-    var $ctx = this.$ctx;
+    var $ctx = this;
     var elem;
     while (elem = $ctx.$queue.shift()) {
       (function (elem) {
@@ -215,29 +230,22 @@ this.PromiseLight = function () {
 
   // $checkUnhandledRejection
   setValue(Promise.prototype, '$checkUnhandledRejection', function $checkUnhandledRejection() {
-    var $ctx = this.$ctx;
-    if ($ctx.$state === REJECTED && !$ctx.$handled) {
+    if (this.$state === REJECTED && !this.$handled) {
       console.error(COLOR_ERROR + 'Unhandled rejection ' +
-          ($ctx.$result instanceof Error ? $ctx.$result.stack || $ctx.$result : $ctx.$result) +
+          (this.$result instanceof Error ? this.$result.stack || this.$result : this.$result) +
           COLOR_NORMAL);
-      // or throw $ctx.$result;
+      // or throw this.$result;
       // or process.emit...
     }
   }); // $checkUnhandledRejection
 
   // Promise.resolve(val)
   setValue(Promise, 'resolve', function resolve(val) {
-    return new Promise(
-      function promiseResolve(resolve, reject) {
-        resolve(val); });
-  }); // resolve
+    return new Promise(PROMISE_RESOLVE, val); });
 
   // Promise.reject(err)
   setValue(Promise, 'reject', function reject(err) {
-    return new Promise(
-      function promiseReject(resolve, reject) {
-        reject(err); });
-  }); // reject
+    return new Promise(PROMISE_REJECT, err); });
 
   // Promise.all([p, ...])
   setValue(Promise, 'all', function all(promises) {
@@ -281,12 +289,8 @@ this.PromiseLight = function () {
 
   // Promise.defer()
   setValue(Promise, 'defer', function defer() {
-    var resolve, reject;
-    var p = new Promise(function (res, rej) {
-      resolve = res;
-      reject = rej;
-    });
-    return {promise: p, resolve: resolve, reject: reject};
+    var p = new Promise();
+    return {promise: p, resolve: p.resolve, reject: p.reject};
   });
 
   if (typeof module === 'object' && module.exports)

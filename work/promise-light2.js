@@ -114,21 +114,9 @@ this.PromiseLight = function () {
     var $ctx = this;
     this.$state = UNRESOLVED;
     this.$queue = new Queue();
-    this.$result;
+    this.$result = undefined;
     this.$handled = false;
     var $fire = function () { $ctx.$fire(); };
-
-    // resolve(val)
-    function resolve(val) {
-      if ($ctx.$state === UNRESOLVED)
-        $ctx.$state = RESOLVED, $ctx.$result = val, nextTick($fire);
-    }
-
-    // reject(err)
-    function reject(err) {
-      if ($ctx.$state === UNRESOLVED)
-        $ctx.$state = REJECTED, $ctx.$result = err, nextTick($fire);
-    }
 
     if (setup && typeof setup === 'function') {
       try {
@@ -141,6 +129,18 @@ this.PromiseLight = function () {
       // no setup, public promise
       setConst(this, 'resolve', resolve);
       setConst(this, 'reject',  reject);
+    }
+
+    // resolve(val)
+    function resolve(val) {
+      if ($ctx.$state === UNRESOLVED)
+        $ctx.$state = RESOLVED, $ctx.$result = val, nextTick($fire);
+    }
+
+    // reject(err)
+    function reject(err) {
+      if ($ctx.$state === UNRESOLVED)
+        $ctx.$state = REJECTED, $ctx.$result = err, nextTick($fire);
     }
 
   } // Promise
