@@ -195,7 +195,6 @@ this.PromiseLight = function () {
     if (rejected != null && typeof rejected !== 'function')
       throw new TypeError('rejected must be a function');
 
-    var $this = this;
     return new Promise(PROMISE_THEN, undefined, rejected, this);
   }); // catch
 
