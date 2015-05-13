@@ -10,10 +10,48 @@ this.PromiseLight = function () {
   var COLOR_ERROR  = typeof window !== 'undefined' ? '' : '\x1b[35m';
   var COLOR_NORMAL = typeof window !== 'undefined' ? '' : '\x1b[m';
 
+  // Queue
+  function Queue() {
+    this.tail = this.head = null;
+  }
+  Queue.prototype.push = function push(x) {
+    if (this.tail)
+      this.tail = this.tail[1] = [x, null];
+    else
+      this.tail = this.head = [x, null];
+  };
+  Queue.prototype.shift = function shift() {
+    if (!this.head) return null;
+    var x = this.head[0];
+    this.head = this.head[1];
+    if (!this.head) this.tail = null;
+    return x;
+  };
+
   // nextTick(fn)
-  var nextTick = typeof setImmediate === 'function' ? setImmediate :
+  var nextTickDo = typeof setImmediate === 'function' ? setImmediate :
     typeof process === 'object' && process && typeof process.nextTick === 'function' ? process.nextTick :
     function nextTick(fn) { setTimeout(fn, 0); };
+
+  var queue = new Queue();
+
+  var nextTickProgress = false;
+  // nextTick(fn)
+  function nextTick(fn) {
+    queue.push(fn);
+    if (nextTickProgress) return;
+
+    nextTickProgress = true;
+
+    nextTickDo(function () {
+      var fn;
+
+      while (fn = queue.shift())
+        fn();
+
+      nextTickProgress = false;
+    });
+  }
 
   // isPromise
   function isPromise(p) {
@@ -75,7 +113,7 @@ this.PromiseLight = function () {
   function Promise(setup) {
     var $ctx = this;
     var $state = UNRESOLVED;
-    var $queue = [];
+    var $queue = new Queue();
     var $result;
     var $handled = false;
 

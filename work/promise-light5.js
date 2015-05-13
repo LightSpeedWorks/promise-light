@@ -10,17 +10,12 @@ this.PromiseLight = function () {
   var COLOR_ERROR  = typeof window !== 'undefined' ? '' : '\x1b[35m';
   var COLOR_NORMAL = typeof window !== 'undefined' ? '' : '\x1b[m';
 
-  // nextTick2(fn)
-  var nextTick = typeof setImmediate === 'function' ? setImmediate :
-    typeof process === 'object' && process && typeof process.nextTick === 'function' ? process.nextTick :
-    function nextTick2(fn) { setTimeout(fn, 0); };
-
   // Queue
   function Queue() {
     this.tail = this.head = null;
   }
   Queue.prototype.push = function push(x) {
-    if (this.tal)
+    if (this.tail)
       this.tail = this.tail[1] = [x, null];
     else
       this.tail = this.head = [x, null];
@@ -32,20 +27,30 @@ this.PromiseLight = function () {
     if (!this.head) this.tail = null;
     return x;
   };
+
+  // nextTick(fn)
+  var nextTickDo = typeof setImmediate === 'function' ? setImmediate :
+    typeof process === 'object' && process && typeof process.nextTick === 'function' ? process.nextTick :
+    function nextTick(fn) { setTimeout(fn, 0); };
+
   var queue = new Queue();
 
   var nextTickProgress = false;
-  function nextTickx(fn) {
+  // nextTick(fn)
+  function nextTick(fn) {
     queue.push(fn);
-    if (!nextTickProgress) {
-      nextTickProgress = true;
-      nextTick2(function () {
-        var fn;
-        while (fn = queue.shift())
-          fn();
-        nextTickProgress = false;
-      });
-    }
+    if (nextTickProgress) return;
+
+    nextTickProgress = true;
+
+    nextTickDo(function () {
+      var fn;
+
+      while (fn = queue.shift())
+        fn();
+
+      nextTickProgress = false;
+    });
   }
 
   // isPromise

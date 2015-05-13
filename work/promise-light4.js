@@ -10,10 +10,48 @@ this.PromiseLight = function () {
   var COLOR_ERROR  = typeof window !== 'undefined' ? '' : '\x1b[35m';
   var COLOR_NORMAL = typeof window !== 'undefined' ? '' : '\x1b[m';
 
+  // Queue
+  function Queue() {
+    this.tail = this.head = null;
+  }
+  Queue.prototype.push = function push(x) {
+    if (this.tail)
+      this.tail = this.tail[1] = [x, null];
+    else
+      this.tail = this.head = [x, null];
+  };
+  Queue.prototype.shift = function shift() {
+    if (!this.head) return null;
+    var x = this.head[0];
+    this.head = this.head[1];
+    if (!this.head) this.tail = null;
+    return x;
+  };
+
   // nextTick(fn)
-  var nextTick = typeof setImmediate === 'function' ? setImmediate :
+  var nextTickDo = typeof setImmediate === 'function' ? setImmediate :
     typeof process === 'object' && process && typeof process.nextTick === 'function' ? process.nextTick :
     function nextTick(fn) { setTimeout(fn, 0); };
+
+  var queue = new Queue();
+
+  var nextTickProgress = false;
+  // nextTick(fn)
+  function nextTick(fn) {
+    queue.push(fn);
+    if (nextTickProgress) return;
+
+    nextTickProgress = true;
+
+    nextTickDo(function () {
+      var fn;
+
+      while (fn = queue.shift())
+        fn();
+
+      nextTickProgress = false;
+    });
+  }
 
   // isPromise
   function isPromise(p) {
@@ -74,11 +112,24 @@ this.PromiseLight = function () {
   // Promise(setup(resolve, reject))
   function Promise(setup) {
     var $ctx = this;
+/*
     setValue(this, '$state', UNRESOLVED);
-    setValue(this, '$queue', []);
+    setValue(this, '$queue', new Queue());
     setValue(this, '$result', undefined);
     setValue(this, '$handled', false);
-    var $fire = function () { $ctx.$fire(); };
+*/
+    var $this = this;
+    var $ctx = {
+      $state: UNRESOLVED,
+      $queue: new Queue(),
+      $result: undefined,
+      $handled: false,
+      $fire: function () { $this.$fire(); },
+      $checkUnhandledRejection: function () { $this.$checkUnhandledRejection(); },
+    };
+    setValue(this, '$ctx', $ctx);
+
+    var $fire = $ctx.$fire;
 
     // resolve(val)
     function resolve(val) {
@@ -113,7 +164,7 @@ this.PromiseLight = function () {
       throw new TypeError('resolved must be a function');
     if (rejected != null && typeof rejected !== 'function')
       throw new TypeError('rejected must be a function');
-    var $ctx = this;
+    var $ctx = this.$ctx;
     return new Promise(function (resolve, reject) {
       $ctx.$queue.push({resolved:resolved, rejected:rejected,
                   resolve:resolve, reject:reject});
@@ -125,7 +176,7 @@ this.PromiseLight = function () {
   setValue(Promise.prototype, 'catch', function caught(rejected) {
     if (rejected != null && typeof rejected !== 'function')
       throw new TypeError('rejected must be a function');
-    var $ctx = this;
+    var $ctx = this.$ctx;
     return new Promise(function (resolve, reject) {
       $ctx.$queue.push({resolved:undefined, rejected:rejected,
                   resolve:resolve, reject:reject});
@@ -135,7 +186,7 @@ this.PromiseLight = function () {
 
   // $fire
   setValue(Promise.prototype, '$fire', function $fire() {
-    var $ctx = this;
+    var $ctx = this.$ctx;
     var elem;
     while (elem = $ctx.$queue.shift()) {
       (function (elem) {
@@ -164,11 +215,12 @@ this.PromiseLight = function () {
 
   // $checkUnhandledRejection
   setValue(Promise.prototype, '$checkUnhandledRejection', function $checkUnhandledRejection() {
-    if (this.$state === REJECTED && !this.$handled) {
+    var $ctx = this.$ctx;
+    if ($ctx.$state === REJECTED && !$ctx.$handled) {
       console.error(COLOR_ERROR + 'Unhandled rejection ' +
-          (this.$result instanceof Error ? this.$result.stack || this.$result : this.$result) +
+          ($ctx.$result instanceof Error ? $ctx.$result.stack || $ctx.$result : $ctx.$result) +
           COLOR_NORMAL);
-      // or throw this.$result;
+      // or throw $ctx.$result;
       // or process.emit...
     }
   }); // $checkUnhandledRejection
