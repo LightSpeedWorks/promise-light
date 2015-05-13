@@ -177,20 +177,20 @@ this.PromiseLight = function () {
     }
 
     // then(resolved, rejected)
-    setConst(this, 'then', function then(resolved, rejected) {
+    this.then = function then(resolved, rejected) {
       if (resolved != null && typeof resolved !== 'function')
         throw new TypeError('resolved must be a function');
       if (rejected != null && typeof rejected !== 'function')
         throw new TypeError('rejected must be a function');
       return new Promise(PROMISE_THEN, resolved, rejected, $queue, $state, $fire);
-    }); // then
+    }; // then
 
     // catch(rejected)
-    setConst(this, 'catch', function caught(rejected) {
+    this['catch'] = function caught(rejected) {
       if (rejected != null && typeof rejected !== 'function')
         throw new TypeError('rejected must be a function');
       return new Promise(PROMISE_THEN, undefined, rejected, $queue, $state, $fire);
-    }); // catch
+    }; // catch
 
     // $fire
     function $fire() {
