@@ -85,24 +85,24 @@ this.PromiseLight = function () {
   // Promise(setup(resolve, reject))
   function Promise(setup) {
     this.$state = UNRESOLVED;
-    this.$stack = [];
-    //var $ctx = this;
+    this.$queue = [];
     this.$result;
     this.$handled = false;
     this.$fire = this.$fire.bind(this);
     this.$checkUnhandledRejection = this.$checkUnhandledRejection.bind(this);
+    var $ctx = this;
 
     // resolve(val)
-    var resolve = function resolve(val) {
-      if (this.$state === UNRESOLVED)
-        this.$state = RESOLVED, this.$result = val, nextTick(this.$fire);
-    }.bind(this);
+    function resolve(val) {
+      if ($ctx.$state === UNRESOLVED)
+        $ctx.$state = RESOLVED, $ctx.$result = val, nextTick($ctx.$fire);
+    }
 
     // reject(err)
-    var reject = function reject(err) {
-      if (this.$state === UNRESOLVED)
-        this.$state = REJECTED, this.$result = err, nextTick(this.$fire);
-    }.bind(this);
+    function reject(err) {
+      if ($ctx.$state === UNRESOLVED)
+        $ctx.$state = REJECTED, $ctx.$result = err, nextTick($ctx.$fire);
+    }
 
     if (setup && typeof setup === 'function') {
       try {
@@ -119,10 +119,36 @@ this.PromiseLight = function () {
 
   } // Promise
 
+  // then(resolved, rejected)
+  setValue(Promise.prototype, 'then', function then(resolved, rejected) {
+      if (resolved != null && typeof resolved !== 'function')
+        throw new TypeError('resolved must be a function');
+      if (rejected != null && typeof rejected !== 'function')
+        throw new TypeError('rejected must be a function');
+      var $ctx = this;
+      return new Promise(function (resolve, reject) {
+        $ctx.$queue.push({resolved:resolved, rejected:rejected,
+                    resolve:resolve, reject:reject});
+        if ($ctx.$state !== UNRESOLVED) nextTick($ctx.$fire);
+      });
+  }); // then
+
+  // catch(rejected)
+  setValue(Promise.prototype, 'catch', function caught(rejected) {
+      if (rejected != null && typeof rejected !== 'function')
+        throw new TypeError('rejected must be a function');
+      var $ctx = this;
+      return new Promise(function (resolve, reject) {
+        $ctx.$queue.push({resolved:undefined, rejected:rejected,
+                    resolve:resolve, reject:reject});
+        if ($ctx.$state !== UNRESOLVED) nextTick($ctx.$fire);
+      });
+  }); // catch
+
   // $fire
   setValue(Promise.prototype, '$fire', function $fire() {
     var elem;
-    while (elem = this.$stack.shift()) {
+    while (elem = this.$queue.shift()) {
       (function (elem) {
         this.$handled = true;
         var resolve = elem.resolve, reject = elem.reject;
@@ -143,7 +169,7 @@ this.PromiseLight = function () {
           reject(err);
         }
       }).call(this, elem);
-    } // while this.$stack.shift()
+    } // while this.$queue.shift()
     nextTick(this.$checkUnhandledRejection);
   }); // $fire
 
@@ -157,34 +183,6 @@ this.PromiseLight = function () {
       // or process.emit...
     }
   }); // $checkUnhandledRejection
-
-
-  // then(resolved, rejected)
-  setValue(Promise.prototype, 'then', function then(resolved, rejected) {
-      if (resolved != null && typeof resolved !== 'function')
-        throw new TypeError('resolved must be a function');
-      if (rejected != null && typeof rejected !== 'function')
-        throw new TypeError('rejected must be a function');
-      var $ctx = this;
-      return new Promise(function (resolve, reject) {
-        $ctx.$stack.push({resolved:resolved, rejected:rejected,
-                    resolve:resolve, reject:reject});
-        if ($ctx.$state !== UNRESOLVED) nextTick($ctx.$fire);
-      });
-  }); // then
-
-  // catch(rejected)
-  setValue(Promise.prototype, 'catch', function caught(rejected) {
-      if (rejected != null && typeof rejected !== 'function')
-        throw new TypeError('rejected must be a function');
-      var $ctx = this;
-      return new Promise(function (resolve, reject) {
-        $ctx.$stack.push({resolved:undefined, rejected:rejected,
-                    resolve:resolve, reject:reject});
-        if ($ctx.$state !== UNRESOLVED) nextTick($ctx.$fire);
-      });
-  }); // catch
-
 
   // Promise.resolve(val)
   setValue(Promise, 'resolve', function resolve(val) {

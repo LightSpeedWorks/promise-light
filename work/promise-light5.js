@@ -21,6 +21,26 @@ this.PromiseLight = function () {
       };
     };
 
+  // Queue
+  function Queue() {
+    this.tail = this.head = null;
+  }
+  Queue.prototype.push = function push(x) {
+    if (this.tal)
+      this.tail = this.tail[1] = [x, null];
+    else
+      this.tail = this.head = [x, null];
+  };
+  Queue.prototype.shift = function shift() {
+    if (!this.head) return null;
+    var x = this.head[0];
+    this.head = this.head[1];
+    if (!this.head) this.tail = null;
+    return x;
+  };
+
+  var queue = new Queue();
+
   // nextTick(fn)
   var nextTick =
     typeof process === 'object' && process && typeof process.nextTick === 'function' ? process.nextTick :
@@ -91,7 +111,7 @@ this.PromiseLight = function () {
   function Promise(setup) {
     var $result;
     var $ctx = this;
-    var $stack = [];
+    var $queue = [];
     var $handled = false;
     var $state = UNRESOLVED;
 
@@ -105,16 +125,16 @@ this.PromiseLight = function () {
     }
     else {
       // resolve(val)
-      var resolve = function resolve(val) {
+      function resolve(val) {
         if ($state === UNRESOLVED)
           $state = RESOLVED, $result = val, nextTick($fire);
-      }.bind(this);
+      }
 
       // reject(err)
-      var reject = function reject(err) {
+      function reject(err) {
         if ($state === UNRESOLVED)
           $state = REJECTED, $result = err, nextTick($fire);
-      }.bind(this);
+      }
 
       if (setup === PROMISE_THEN) {
         arguments[3].push({resolved:arguments[1], rejected:arguments[2],
@@ -142,9 +162,9 @@ this.PromiseLight = function () {
         throw new TypeError('resolved must be a function');
       if (rejected != null && typeof rejected !== 'function')
         throw new TypeError('rejected must be a function');
-      return new Promise(PROMISE_THEN, resolved, rejected, $stack, $state, $fire);
+      return new Promise(PROMISE_THEN, resolved, rejected, $queue, $state, $fire);
 //      return new Promise(function (resolve, reject) {
-//        $stack.push({resolved:resolved, rejected:rejected,
+//        $queue.push({resolved:resolved, rejected:rejected,
 //                     resolve: resolve,  reject:  reject});
 //        if ($state !== UNRESOLVED) nextTick($fire);
 //      });
@@ -154,9 +174,9 @@ this.PromiseLight = function () {
     setConst(this, 'catch', function caught(rejected) {
       if (rejected != null && typeof rejected !== 'function')
         throw new TypeError('rejected must be a function');
-      return new Promise(PROMISE_THEN, undefined, rejected, $stack, $state, $fire);
+      return new Promise(PROMISE_THEN, undefined, rejected, $queue, $state, $fire);
 //      return new Promise(function (resolve, reject) {
-//        $stack.push({resolved:undefined, rejected:rejected,
+//        $queue.push({resolved:undefined, rejected:rejected,
 //                     resolve: resolve,   reject:  reject});
 //        if ($state !== UNRESOLVED) nextTick($fire);
 //      });
@@ -165,7 +185,7 @@ this.PromiseLight = function () {
     // $fire
     function $fire() {
       var elem;
-      while (elem = $stack.shift()) {
+      while (elem = $queue.shift()) {
         (function (elem) {
           $handled = true;
           var resolve = elem.resolve, reject = elem.reject;
@@ -186,7 +206,7 @@ this.PromiseLight = function () {
             reject(err);
           }
         })(elem);
-      } // while $stack.shift()
+      } // while $queue.shift()
       nextTick($checkUnhandledRejection);
     } // $fire
 

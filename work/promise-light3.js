@@ -85,7 +85,7 @@ this.PromiseLight = function () {
   // Promise(setup(resolve, reject))
   function Promise(setup) {
     var $state = UNRESOLVED;
-    var $stack = [];
+    var $queue = [];
     var $ctx = this;
     var $result;
     var $handled = false;
@@ -93,7 +93,7 @@ this.PromiseLight = function () {
     // $fire
     function $fire() {
       var elem;
-      while (elem = $stack.shift()) {
+      while (elem = $queue.shift()) {
         (function (elem) {
           $handled = true;
           var resolve = elem.resolve, reject = elem.reject;
@@ -114,21 +114,21 @@ this.PromiseLight = function () {
             reject(err);
           }
         })(elem);
-      } // while $stack.shift()
+      } // while $queue.shift()
       nextTick($checkUnhandledRejection);
     } // $fire
 
     // resolve(val)
-    var resolve = function resolve(val) {
+    function resolve(val) {
       if ($state === UNRESOLVED)
         $state = RESOLVED, $result = val, nextTick($fire);
-    }.bind(this);
+    }
 
     // reject(err)
-    var reject = function reject(err) {
+    function reject(err) {
       if ($state === UNRESOLVED)
         $state = REJECTED, $result = err, nextTick($fire);
-    }.bind(this);
+    }
 
     // then(resolved, rejected)
     setConst(this, 'then', function then(resolved, rejected) {
@@ -137,7 +137,7 @@ this.PromiseLight = function () {
         if (rejected != null && typeof rejected !== 'function')
           throw new TypeError('rejected must be a function');
         return new Promise(function (resolve, reject) {
-          $stack.push({resolved:resolved, rejected:rejected,
+          $queue.push({resolved:resolved, rejected:rejected,
                       resolve:resolve, reject:reject});
           if ($state !== UNRESOLVED) nextTick($fire);
         });
@@ -148,7 +148,7 @@ this.PromiseLight = function () {
         if (rejected != null && typeof rejected !== 'function')
           throw new TypeError('rejected must be a function');
         return new Promise(function (resolve, reject) {
-          $stack.push({resolved:undefined, rejected:rejected,
+          $queue.push({resolved:undefined, rejected:rejected,
                       resolve:resolve, reject:reject});
           if ($state !== UNRESOLVED) nextTick($fire);
         });

@@ -6,7 +6,7 @@
   var Promise1 = require('../lib/promise-light'); // closure
   var Promise2 = require('./promise-light2'); // normal object
   var Promise3 = require('./promise-light3'); // closure
-  //var Promise4 = require('./promise-light4'); // normal object
+  var Promise4 = require('./promise-light4'); // normal object
   var Promise5 = require('./promise-light5'); // closure
 
   if (!Promise) Promise = Promise1;
@@ -39,21 +39,17 @@
     next();
 
     return dfd.promise;
-
-//    return Promise.all(arr2).then(function () {
-//      console.log(nm, ((Date.now() - start) / 1000.0).toFixed(3));
-//    });
   }
 
   bench(Promise, 'p0').then(function () {
     return bench(Promise1, 'p1');
   }).then(function () {
-  //  return bench(Promise2, 'p2');
-  //}).then(function () {
-  //  return bench(Promise3, 'p3');
-  //}).then(function () {
-  //  return bench(Promise4, 'p4');
-  //}).then(function () {
+    return bench(Promise2, 'p2');
+  }).then(function () {
+    return bench(Promise3, 'p3');
+  }).then(function () {
+    return bench(Promise4, 'p4');
+  }).then(function () {
     return bench(Promise5, 'p5');
   }).then(function () {
     return bench(BlueBird, 'bb');
@@ -63,12 +59,12 @@
   }).then(function () {
     return bench(Promise1, 'p1');
   }).then(function () {
-  //  return bench(Promise2, 'p2');
-  //}).then(function () {
-  //  return bench(Promise3, 'p3');
-  //}).then(function () {
-  //  return bench(Promise4, 'p4');
-  //}).then(function () {
+    return bench(Promise2, 'p2');
+  }).then(function () {
+    return bench(Promise3, 'p3');
+  }).then(function () {
+    return bench(Promise4, 'p4');
+  }).then(function () {
     return bench(Promise5, 'p5');
   }).then(function () {
     return bench(BlueBird, 'bb');
@@ -78,18 +74,17 @@
   }).then(function () {
     return bench(Promise1, 'p1');
   }).then(function () {
-  //  return bench(Promise2, 'p2');
-  //}).then(function () {
-  //  return bench(Promise3, 'p3');
-  //}).then(function () {
-  //  return bench(Promise4, 'p4');
-  //}).then(function () {
+    return bench(Promise2, 'p2');
+  }).then(function () {
+    return bench(Promise3, 'p3');
+  }).then(function () {
+    return bench(Promise4, 'p4');
+  }).then(function () {
     return bench(Promise5, 'p5');
   }).then(function () {
     return bench(BlueBird, 'bb');
   }).then(function () {
     process.stdout.write('\n');
-    return bench(Promise, 'p0');
   });
 
 })(typeof Promise === 'function' ? Promise : null);
