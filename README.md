@@ -5,7 +5,11 @@
   it supports browser Chrome, Firefox, ie11, ie9, ie8.<br/>
   also supports node.js/io.js.
 
+  it supports unhandled exception.
+
   if you have native Promise then use it.
+
+  (faster than native Promise)
 
 # INSTALL:
 
