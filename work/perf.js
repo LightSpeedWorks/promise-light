@@ -11,7 +11,7 @@
 
   if (!Promise) Promise = Promise1;
 
-  var N = 1e3, M = 200;
+  var N = 1e3, M = 100;
 
   function bench(Promise, nm) {
     var start = Date.now();
