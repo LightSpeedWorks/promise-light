@@ -10,16 +10,10 @@ this.PromiseLight = function () {
   var COLOR_ERROR  = typeof window !== 'undefined' ? '' : '\x1b[35m';
   var COLOR_NORMAL = typeof window !== 'undefined' ? '' : '\x1b[m';
 
-  // Function.prototype.bind for ie8
-  var slice = Array.prototype.slice;
-  if (!Function.prototype.bind)
-    Function.prototype.bind = function bind(ctx) {
-      var args = slice.call(arguments, 1);
-      var fn = this;
-      return function () {
-        return fn.apply(ctx, slice.call(args).concat(slice.call(arguments)));
-      };
-    };
+  // nextTick2(fn)
+  var nextTick = typeof setImmediate === 'function' ? setImmediate :
+    typeof process === 'object' && process && typeof process.nextTick === 'function' ? process.nextTick :
+    function nextTick2(fn) { setTimeout(fn, 0); };
 
   // Queue
   function Queue() {
@@ -38,14 +32,21 @@ this.PromiseLight = function () {
     if (!this.head) this.tail = null;
     return x;
   };
-
   var queue = new Queue();
 
-  // nextTick(fn)
-  var nextTick =
-    typeof process === 'object' && process && typeof process.nextTick === 'function' ? process.nextTick :
-    typeof setImmediate === 'function' ? setImmediate :
-    function nextTick(fn) { setTimeout(fn, 0); };
+  var nextTickProgress = false;
+  function nextTickx(fn) {
+    queue.push(fn);
+    if (!nextTickProgress) {
+      nextTickProgress = true;
+      nextTick2(function () {
+        var fn;
+        while (fn = queue.shift())
+          fn();
+        nextTickProgress = false;
+      });
+    }
+  }
 
   // isPromise
   function isPromise(p) {
@@ -109,11 +110,11 @@ this.PromiseLight = function () {
 
   // Promise(setup(resolve, reject))
   function Promise(setup) {
-    var $result;
     var $ctx = this;
-    var $queue = [];
-    var $handled = false;
     var $state = UNRESOLVED;
+    var $queue = new Queue();
+    var $result;
+    var $handled = false;
 
     if (setup === PROMISE_RESOLVE) {
       $state = RESOLVED;
@@ -124,17 +125,6 @@ this.PromiseLight = function () {
       $result = arguments[1];
     }
     else {
-      // resolve(val)
-      function resolve(val) {
-        if ($state === UNRESOLVED)
-          $state = RESOLVED, $result = val, nextTick($fire);
-      }
-
-      // reject(err)
-      function reject(err) {
-        if ($state === UNRESOLVED)
-          $state = REJECTED, $result = err, nextTick($fire);
-      }
 
       if (setup === PROMISE_THEN) {
         arguments[3].push({resolved:arguments[1], rejected:arguments[2],
@@ -154,6 +144,18 @@ this.PromiseLight = function () {
         setConst(this, 'reject',  reject);
       }
 
+    }
+
+    // resolve(val)
+    function resolve(val) {
+      if ($state === UNRESOLVED)
+        $state = RESOLVED, $result = val, nextTick($fire);
+    }
+
+    // reject(err)
+    function reject(err) {
+      if ($state === UNRESOLVED)
+        $state = REJECTED, $result = err, nextTick($fire);
     }
 
     // then(resolved, rejected)

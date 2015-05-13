@@ -10,17 +10,6 @@ this.PromiseLight = function () {
   var COLOR_ERROR  = typeof window !== 'undefined' ? '' : '\x1b[35m';
   var COLOR_NORMAL = typeof window !== 'undefined' ? '' : '\x1b[m';
 
-  // Function.prototype.bind for ie8
-  var slice = Array.prototype.slice;
-  if (!Function.prototype.bind)
-    Function.prototype.bind = function bind(ctx) {
-      var args = slice.call(arguments, 1);
-      var fn = this;
-      return function () {
-        return fn.apply(ctx, slice.call(args).concat(slice.call(arguments)));
-      };
-    };
-
   // nextTick(fn)
   var nextTick = typeof setImmediate === 'function' ? setImmediate :
     typeof process === 'object' && process && typeof process.nextTick === 'function' ? process.nextTick :
@@ -84,24 +73,23 @@ this.PromiseLight = function () {
 
   // Promise(setup(resolve, reject))
   function Promise(setup) {
+    var $ctx = this;
     this.$state = UNRESOLVED;
     this.$queue = [];
     this.$result;
     this.$handled = false;
-    this.$fire = this.$fire.bind(this);
-    this.$checkUnhandledRejection = this.$checkUnhandledRejection.bind(this);
-    var $ctx = this;
+    var $fire = function () { $ctx.$fire(); };
 
     // resolve(val)
     function resolve(val) {
       if ($ctx.$state === UNRESOLVED)
-        $ctx.$state = RESOLVED, $ctx.$result = val, nextTick($ctx.$fire);
+        $ctx.$state = RESOLVED, $ctx.$result = val, nextTick($fire);
     }
 
     // reject(err)
     function reject(err) {
       if ($ctx.$state === UNRESOLVED)
-        $ctx.$state = REJECTED, $ctx.$result = err, nextTick($ctx.$fire);
+        $ctx.$state = REJECTED, $ctx.$result = err, nextTick($fire);
     }
 
     if (setup && typeof setup === 'function') {
@@ -129,7 +117,7 @@ this.PromiseLight = function () {
       return new Promise(function (resolve, reject) {
         $ctx.$queue.push({resolved:resolved, rejected:rejected,
                     resolve:resolve, reject:reject});
-        if ($ctx.$state !== UNRESOLVED) nextTick($ctx.$fire);
+        if ($ctx.$state !== UNRESOLVED) nextTick(function () { $ctx.$fire(); });
       });
   }); // then
 
@@ -141,36 +129,37 @@ this.PromiseLight = function () {
       return new Promise(function (resolve, reject) {
         $ctx.$queue.push({resolved:undefined, rejected:rejected,
                     resolve:resolve, reject:reject});
-        if ($ctx.$state !== UNRESOLVED) nextTick($ctx.$fire);
+        if ($ctx.$state !== UNRESOLVED) nextTick(function () { $ctx.$fire(); });
       });
   }); // catch
 
   // $fire
   setValue(Promise.prototype, '$fire', function $fire() {
+    var $ctx = this;
     var elem;
-    while (elem = this.$queue.shift()) {
+    while (elem = $ctx.$queue.shift()) {
       (function (elem) {
-        this.$handled = true;
+        $ctx.$handled = true;
         var resolve = elem.resolve, reject = elem.reject;
-        var completed = elem[this.$state];
+        var completed = elem[$ctx.$state];
         function complete(val) {
-          resolve(completed.call(this, val)); }
+          resolve(completed.call($ctx, val)); }
         try {
-          if (this.$state === RESOLVED) {
-            if (!completed) return resolve(this.$result);
-            if (isPromise(this.$result))
-              return this.$result.then(complete, reject);
+          if ($ctx.$state === RESOLVED) {
+            if (!completed) return resolve($ctx.$result);
+            if (isPromise($ctx.$result))
+              return $ctx.$result.then(complete, reject);
           }
-          else { // this.$state === REJECTED
-            if (!completed) return reject(this.$result);
+          else { // $ctx.$state === REJECTED
+            if (!completed) return reject($ctx.$result);
           }
-          complete.call(this, this.$result);
+          complete($ctx.$result);
         } catch (err) {
           reject(err);
         }
-      }).call(this, elem);
-    } // while this.$queue.shift()
-    nextTick(this.$checkUnhandledRejection);
+      })(elem);
+    } // while $ctx.$queue.shift()
+    nextTick(function () { $ctx.$checkUnhandledRejection(); });
   }); // $fire
 
   // $checkUnhandledRejection

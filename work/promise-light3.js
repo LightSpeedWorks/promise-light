@@ -10,17 +10,6 @@ this.PromiseLight = function () {
   var COLOR_ERROR  = typeof window !== 'undefined' ? '' : '\x1b[35m';
   var COLOR_NORMAL = typeof window !== 'undefined' ? '' : '\x1b[m';
 
-  // Function.prototype.bind for ie8
-  var slice = Array.prototype.slice;
-  if (!Function.prototype.bind)
-    Function.prototype.bind = function bind(ctx) {
-      var args = slice.call(arguments, 1);
-      var fn = this;
-      return function () {
-        return fn.apply(ctx, slice.call(args).concat(slice.call(arguments)));
-      };
-    };
-
   // nextTick(fn)
   var nextTick = typeof setImmediate === 'function' ? setImmediate :
     typeof process === 'object' && process && typeof process.nextTick === 'function' ? process.nextTick :
@@ -84,9 +73,9 @@ this.PromiseLight = function () {
 
   // Promise(setup(resolve, reject))
   function Promise(setup) {
+    var $ctx = this;
     var $state = UNRESOLVED;
     var $queue = [];
-    var $ctx = this;
     var $result;
     var $handled = false;
 
