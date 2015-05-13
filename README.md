@@ -2,10 +2,10 @@
 ====
 
   `promise-light` is standard ES6 Promise implementation.<br/>
-  it supports browser Chrome, Firefox, ie11, ie9, ie8.<br/>
+  it supports browser Chrome, Firefox, ie11, ie9, ie8. (tested)<br/>
   also supports node.js/io.js.
 
-  it supports unhandled exception.
+  it throws unhandled rejection error.
 
   if you have native Promise then use it.
 
