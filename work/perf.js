@@ -8,6 +8,7 @@
   var Promise3 = require('./promise-light3'); // closure
   var Promise4 = require('./promise-light4'); // normal object
   var Promise5 = require('./promise-light5'); // closure
+  var Promise6 = require('./promise-light6'); // normal object
 
   if (!Promise) Promise = Promise1;
 
@@ -52,20 +53,7 @@
   }).then(function () {
     return bench(Promise5, 'p5');
   }).then(function () {
-    return bench(BlueBird, 'bb');
-  }).then(function () {
-    process.stdout.write('\n');
-    return bench(Promise, 'p0');
-  }).then(function () {
-    return bench(Promise1, 'p1');
-  }).then(function () {
-    return bench(Promise2, 'p2');
-  }).then(function () {
-    return bench(Promise3, 'p3');
-  }).then(function () {
-    return bench(Promise4, 'p4');
-  }).then(function () {
-    return bench(Promise5, 'p5');
+    return bench(Promise6, 'p6');
   }).then(function () {
     return bench(BlueBird, 'bb');
   }).then(function () {
@@ -81,6 +69,25 @@
     return bench(Promise4, 'p4');
   }).then(function () {
     return bench(Promise5, 'p5');
+  }).then(function () {
+    return bench(Promise6, 'p6');
+  }).then(function () {
+    return bench(BlueBird, 'bb');
+  }).then(function () {
+    process.stdout.write('\n');
+    return bench(Promise, 'p0');
+  }).then(function () {
+    return bench(Promise1, 'p1');
+  }).then(function () {
+    return bench(Promise2, 'p2');
+  }).then(function () {
+    return bench(Promise3, 'p3');
+  }).then(function () {
+    return bench(Promise4, 'p4');
+  }).then(function () {
+    return bench(Promise5, 'p5');
+  }).then(function () {
+    return bench(Promise6, 'p6');
   }).then(function () {
     return bench(BlueBird, 'bb');
   }).then(function () {
