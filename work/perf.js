@@ -9,6 +9,7 @@
   var Promise4 = require('./promise-light4'); // normal object
   var Promise5 = require('./promise-light5'); // closure
   var Promise6 = require('./promise-light6'); // normal object
+  var AaPromise = require('./aa-promise'); // closure function
 
   if (!Promise) Promise = Promise1;
 
@@ -53,7 +54,7 @@
   }).then(function () {
     return bench(Promise5, 'p5');
   }).then(function () {
-    return bench(Promise6, 'p6');
+    return bench(AaPromise, 'aa');
   }).then(function () {
     return bench(BlueBird, 'bb');
   }).then(function () {
@@ -70,7 +71,7 @@
   }).then(function () {
     return bench(Promise5, 'p5');
   }).then(function () {
-    return bench(Promise6, 'p6');
+    return bench(AaPromise, 'aa');
   }).then(function () {
     return bench(BlueBird, 'bb');
   }).then(function () {
@@ -87,7 +88,7 @@
   }).then(function () {
     return bench(Promise5, 'p5');
   }).then(function () {
-    return bench(Promise6, 'p6');
+    return bench(AaPromise, 'aa');
   }).then(function () {
     return bench(BlueBird, 'bb');
   }).then(function () {
