@@ -115,6 +115,9 @@ this.PromiseThunk = function () {
 
   // PromiseThunk(setup(resolve, reject))
   function PromiseThunk(setup) {
+    if (setup && typeof setup.then === 'function')
+      return $$convert(setup);
+
     thunk.$callbacks = new Queue();
     thunk.$state = STATE_UNRESOLVED;
     thunk.$args = undefined;
@@ -131,25 +134,27 @@ this.PromiseThunk = function () {
           thunk.toString =   $$toString;
     }
 
-    if (setup === PROMISE_RESOLVE)
-      $$resolve.call(thunk, arguments[1]);
-    else if (setup === PROMISE_REJECT)
-      $$reject.call(thunk, arguments[1]);
-    else if (typeof setup === 'function') {
-      // setup(resolve, reject)
-      try {
-        setup.call(thunk,
-          function resolve() { return $$resolve.apply(thunk, arguments); },
-          function reject()  { return $$reject.apply(thunk, arguments); });
-      } catch (err) {
-        $$reject.call(thunk, err);
+    if (typeof setup === 'function') {
+      if (setup === PROMISE_RESOLVE)
+        $$resolve.call(thunk, arguments[1]);
+      else if (setup === PROMISE_REJECT)
+        $$reject.call(thunk, arguments[1]);
+      else {
+        // setup(resolve, reject)
+        try {
+          setup.call(thunk,
+            function resolve() { return $$resolve.apply(thunk, arguments); },
+            function reject()  { return $$reject.apply(thunk, arguments); });
+        } catch (err) {
+          $$reject.call(thunk, err);
+        }
       }
     }
 
     // thunk(cb)
     function thunk(cb) {
       if (typeof cb !== 'function')
-        new TypeError('callback must be a function');
+        throw new TypeError('callback must be a function');
 
       var p = PromiseThunk();
       thunk.$callbacks.push([undefined, undefined,
@@ -309,12 +314,14 @@ this.PromiseThunk = function () {
     }
     return PromiseThunk(PROMISE_RESOLVE, val);
   });
+  var $$convert = PromiseThunk.convert;
 
   // PromiseThunk.all([p, ...])
   setValue(PromiseThunk, 'all', function all(promises) {
     if (isIterator(promises)) promises = makeArrayFromIterator(promises);
     if (!(promises instanceof Array))
       throw new TypeError('promises must be an array');
+
     return PromiseThunk(
       function promiseAll(resolve, reject) {
         var n = promises.length;
@@ -336,6 +343,7 @@ this.PromiseThunk = function () {
     if (isIterator(promises)) promises = makeArrayFromIterator(promises);
     if (!(promises instanceof Array))
       throw new TypeError('promises must be an array');
+
     return PromiseThunk(
       function promiseRace(resolve, reject) {
         promises.forEach(function (p) {
