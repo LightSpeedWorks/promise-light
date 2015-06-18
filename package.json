@@ -18,6 +18,10 @@
     "type": "git",
     "url": "lightspeedworks/promise-light"
   },
+  "bugs": {
+    "url": "https://github.com/LightSpeedWorks/promise-light/issues"
+  },
+  "homepage": "https://github.com/LightSpeedWorks/promise-light",
   "author": "LightSpeedC",
   "directories": {
     "test": "test"
