@@ -199,7 +199,8 @@ this.PromiseThunk = function () {
     }
 
     // PromiseThunk#then(res, rej)
-    setConst(thunk, 'then', function (res, rej) {
+    thunk.then = then;
+    function then(res, rej) {
       if (res && typeof res !== 'function')
         new TypeError('resolved must be a function');
       if (rej && typeof rej !== 'function')
@@ -212,10 +213,11 @@ this.PromiseThunk = function () {
       ]);
       nextTick(fire);
       return p;
-    });
+    } // then
 
     // PromiseThunk#catch(rej)
-    setConst(thunk, 'catch', function (rej) {
+    thunk['catch'] = caught;
+    function caught(rej) {
       if (rej && typeof rej !== 'function')
         new TypeError('rejected must be a function');
 
@@ -225,15 +227,16 @@ this.PromiseThunk = function () {
       ]);
       nextTick(fire);
       return p;
-    });
+    } // catch
 
     // PromiseThunk#toString()
-    setConst(thunk, 'toString', function toString() {
+    thunk.toString = toString;
+    function toString() {
       return 'PromiseThunk { ' + (
         $state === STATE_UNRESOLVED ? '<pending>' :
         $state === STATE_RESOLVED ? JSON.stringify($args[ARGS_VAL]) :
         '<rejected> ' + $args[ARGS_ERR]) + ' }';
-    });
+    }; // toString
 
     setProto(thunk, PromiseThunk.prototype);
 

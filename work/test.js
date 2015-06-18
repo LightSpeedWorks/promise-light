@@ -478,7 +478,7 @@
         }
         var keys = Object.getOwnPropertyNames(Promise).filter(f).sort().join(',');
         assert(keys === 'accept,all,defer,race,reject,resolve' ||
-               keys === 'AaPromise,Promise,accept,all,defer,isPromise,race,reject,resolve,wrap' ||
+               keys === 'Promise,PromiseThunk,accept,all,defer,isPromise,race,reject,resolve,wrap' ||
                keys === 'all,race,reject,resolve',
                'Promise own property names match: keys = ' + keys);
       }) // it Promise own property names
