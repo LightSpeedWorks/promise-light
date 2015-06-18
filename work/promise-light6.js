@@ -79,16 +79,15 @@ this.PromiseLight = function () {
     nextTickProgress = true;
 
     nextTickDo(function () {
-      var e;
+      var task;
 
       for (;;) {
-        while (e = tasksHighPrio.shift())
-          e.fn.call(e.ctx);
+        while (task = tasksHighPrio.shift())
+          task.fn.call(task.ctx);
 
-        e = tasksLowPrio.shift();
-        if (!e) break;
-
-        e.fn.call(e.ctx);
+        if (task = tasksLowPrio.shift())
+          task.fn.call(task.ctx);
+        else break;
       }
 
       nextTickProgress = false;
