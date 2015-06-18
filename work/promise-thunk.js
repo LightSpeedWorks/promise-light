@@ -75,29 +75,34 @@ this.PromiseThunk = function () {
 
   var nextTickProgress = false;
 
-  // nextTick(fn, fnLow)
-  function nextTick(fn, fnLow) {
+  // nextTick(ctx, fn, fnLow)
+  function nextTick(ctx, fn, fnLow) {
     if (typeof fn === 'function')
-      tasksHighPrio.push(fn);
+      tasksHighPrio.push([ctx, fn]);
 
     if (typeof fnLow === 'function')
-      tasksLowPrio.push(fnLow);
+      tasksLowPrio.push([ctx, fnLow]);
 
     if (nextTickProgress) return;
 
     nextTickProgress = true;
 
     nextTickDo(function () {
-      var fn;
+      var ctx, fn, pair;
 
       for (;;) {
-        while (fn = tasksHighPrio.shift())
-          fn();
+        while (pair = tasksHighPrio.shift()) {
+          ctx = pair[0];
+          fn = pair[1];
+          fn.call(ctx);
+        }
 
-        fn = tasksLowPrio.shift();
-        if (!fn) break;
+        pair = tasksLowPrio.shift();
+        if (!pair) break;
 
-        fn();
+        ctx = pair[0];
+        fn = pair[1];
+        fn.call(ctx);
       }
 
       nextTickProgress = false;
@@ -108,88 +113,37 @@ this.PromiseThunk = function () {
   function PROMISE_REJECT() {}
   function PROMISE_THEN() {}
 
-  setProto(PromiseThunk.prototype, Function.prototype);
-
   // PromiseThunk(setup(resolve, reject))
   function PromiseThunk(setup) {
-    var $callbacks = new Queue();
-    var $state = STATE_UNRESOLVED;
-    var $args;
-    var $handled = false;
+    thunk.$callbacks = new Queue();
+    thunk.$state = STATE_UNRESOLVED;
+    thunk.$args = undefined;
+    thunk.$handled = false;
 
-    setProto(thunk, PromiseThunk.prototype);
-    thunk.then = then;
-    thunk['catch'] = caught;
-    thunk.toString = toString;
+    if (setProto)
+      setProto(thunk, PromiseThunk.prototype);
+    else {
+      if (thunk.then     !== $$then)
+          thunk.then     =   $$then;
+      if (thunk['catch'] !== $$catch)
+          thunk['catch'] =   $$catch;
+      if (thunk.toString !== $$toString)
+          thunk.toString =   $$toString;
+    }
 
     if (setup === PROMISE_RESOLVE)
-      resolve(arguments[1]);
+      $$resolve.call(thunk, arguments[1]);
     else if (setup === PROMISE_REJECT)
-      reject(arguments[1]);
-    else if (typeof setup === 'function')
-      // setup(res, rej)
+      $$reject.call(thunk, arguments[1]);
+    else if (typeof setup === 'function') {
+      // setup(resolve, reject)
       try {
-        setup.call(thunk, resolve, reject);
+        setup.call(thunk,
+          function resolve() { return $$resolve.apply(thunk, arguments); },
+          function reject()  { return $$reject.apply(thunk, arguments); });
       } catch (err) {
-        reject(err);
+        $$reject.call(thunk, err);
       }
-    else {
-      // no setup, public promise
-      setConst(thunk, '$resolve', resolve);
-      setConst(thunk, '$reject',  reject);
-    }
-
-    // resolve(val)
-    function resolve(val) {
-      if ($args) return;
-
-      // is promise?
-      if (isPromise(val)) {
-        return val.then(function (v) { cb(null, v); }, cb);
-      }
-
-      // is function? must be thunk.
-      if (typeof val === 'function')
-        return val(cb);
-
-      cb(null, val);
-    }
-
-    // reject(err)
-    function reject(err) {
-      if ($args) return;
-      cb(err);
-    }
-
-    // fire()
-    function fire() {
-      var elem;
-      if (!$args) return; // not yet fired
-      while (elem = $callbacks.shift()) {
-        $handled = true;
-        if (elem[STATE_THUNK]) elem[STATE_THUNK].apply(null, $args);
-        else if (elem[$state]) elem[$state]($args[$state]);
-      }
-      nextTick(null, $checkUnhandledRejection);
-    }
-
-    // $checkUnhandledRejection
-    function $checkUnhandledRejection() {
-      if ($state === STATE_REJECTED && !$handled) {
-        console.error(COLOR_ERROR + 'Unhandled rejection ' +
-            ($args[ARGS_ERR] instanceof Error ? $args[ARGS_ERR].stack || $args[ARGS_ERR] : $args[ARGS_ERR]) +
-            COLOR_NORMAL);
-        // or throw $args[0];
-        // or process.emit...
-      }
-    } // $checkUnhandledRejection
-
-    // cb(err, val) or cb(...$args)
-    function cb() {
-      if ($args) return; // already fired
-      $args = arguments;
-      $state = $args[ARGS_ERR] ? STATE_REJECTED : STATE_RESOLVED;
-      nextTick(fire);
     }
 
     // thunk(cb)
@@ -198,56 +152,120 @@ this.PromiseThunk = function () {
         new TypeError('callback must be a function');
 
       var p = PromiseThunk();
-      $callbacks.push([undefined, undefined,
+      thunk.$callbacks.push([undefined, undefined,
         function (err, val) {
           try {
-            if (err) p.$resolve(cb(err));
-            else p.$resolve(cb.apply(null, arguments));
-          } catch (e) { p.$reject(e); } }
+            if (err) $$resolve.call(p, cb(err));
+            else     $$resolve.call(p, cb.apply(null, arguments));
+          } catch (e) { $$reject.call(p, e); } }
       ]);
-      nextTick(fire);
+      nextTick(thunk, $$fire);
       return p;
     }
 
-    // PromiseThunk#then(res, rej)
-    function then(res, rej) {
-      if (res && typeof res !== 'function')
-        new TypeError('resolved must be a function');
-      if (rej && typeof rej !== 'function')
-        new TypeError('rejected must be a function');
-
-      var p = PromiseThunk();
-      $callbacks.push([
-        function (err) { try { p.$resolve(rej(err)); } catch (e) { p.$reject(e); } },
-        function (val) { try { p.$resolve(res(val)); } catch (e) { p.$reject(e); } }
-      ]);
-      nextTick(fire);
-      return p;
-    } // then
-
-    // PromiseThunk#catch(rej)
-    function caught(rej) {
-      if (rej && typeof rej !== 'function')
-        new TypeError('rejected must be a function');
-
-      var p = PromiseThunk();
-      $callbacks.push([
-        function (err) { try { p.$resolve(rej(err)); } catch (e) { p.$reject(e); } }
-      ]);
-      nextTick(fire);
-      return p;
-    } // catch
-
-    // PromiseThunk#toString()
-    function toString() {
-      return 'PromiseThunk { ' + (
-        $state === STATE_UNRESOLVED ? '<pending>' :
-        $state === STATE_RESOLVED ? JSON.stringify($args[ARGS_VAL]) :
-        '<rejected> ' + $args[ARGS_ERR]) + ' }';
-    }; // toString
-
     return thunk;
   }
+
+  // $$callback(err, val) or $callback(...$args)
+  function $$callback() {
+    if (this.$args) return; // already fired
+    this.$args = arguments;
+    this.$state = arguments[ARGS_ERR] ? STATE_REJECTED : STATE_RESOLVED;
+    nextTick(this, $$fire);
+  }
+
+  // $$resolve(val)
+  function $$resolve(val) {
+    var thunk = this;
+    if (thunk.$args) return;
+
+    // is promise?
+    if (isPromise(val)) {
+      val.then(
+        function (v) { $$callback.call(thunk, null, v); },
+        function (e) { $$callback.apply(thunk, arguments); });
+      return;
+    }
+
+    // is function? must be thunk.
+    if (typeof val === 'function') {
+      val(function (e) { $$callback.apply(thunk, arguments); });
+      return;
+    }
+
+    $$callback.call(thunk, null, val);
+  } // $$resolve
+
+  // $$reject(err)
+  var $$reject = $$callback;
+
+  // $$fire()
+  function $$fire() {
+    var elem;
+    var $args = this.$args;
+    var $state = this.$state;
+    var $callbacks = this.$callbacks;
+    if (!$args) return; // not yet fired
+    while (elem = $callbacks.shift()) {
+      this.$handled = true;
+      if (elem[STATE_THUNK]) elem[STATE_THUNK].apply(null, $args);
+      else if (elem[$state]) elem[$state]($args[$state]);
+    }
+    nextTick(this, null, $$checkUnhandledRejection);
+  } // $$fire
+
+  // $$checkUnhandledRejection()
+  function $$checkUnhandledRejection() {
+    var $args = this.$args;
+    if (this.$state === STATE_REJECTED && !this.$handled) {
+      console.error(COLOR_ERROR + 'Unhandled rejection ' +
+          ($args[ARGS_ERR] instanceof Error ? $args[ARGS_ERR].stack ||
+           $args[ARGS_ERR] : $args[ARGS_ERR]) +
+          COLOR_NORMAL);
+      // or throw $args[0];
+      // or process.emit...
+    }
+  } // $$checkUnhandledRejection
+
+  // PromiseThunk#then(res, rej)
+  setValue(PromiseThunk.prototype, 'then', function then(res, rej) {
+    if (res && typeof res !== 'function')
+      throw new TypeError('resolved must be a function');
+    if (rej && typeof rej !== 'function')
+      throw new TypeError('rejected must be a function');
+
+    var p = PromiseThunk();
+    this.$callbacks.push([
+      function (err) { try { $$resolve.call(p, rej(err)); } catch (e) { $$reject.call(p, e); } },
+      function (val) { try { $$resolve.call(p, res(val)); } catch (e) { $$reject.call(p, e); } }
+    ]);
+    nextTick(this, $$fire);
+    return p;
+  }); // then
+  var $$then = PromiseThunk.prototype.then;
+
+  // PromiseThunk#catch(rej)
+  setValue(PromiseThunk.prototype, 'catch', function caught(rej) {
+    if (rej && typeof rej !== 'function')
+      throw new TypeError('rejected must be a function');
+
+    var p = PromiseThunk();
+    this.$callbacks.push([
+      function (err) { try { $$resolve.call(p, rej(err)); } catch (e) { $$reject.call(p, e); } }
+    ]);
+    nextTick(this, $$fire);
+    return p;
+  }); // catch
+  var $$catch = PromiseThunk.prototype['catch'];
+
+  // PromiseThunk#toString()
+  setValue(PromiseThunk.prototype, 'toString', function toString() {
+    return 'PromiseThunk { ' + (
+      this.$state === STATE_UNRESOLVED ? '<pending>' :
+      this.$state === STATE_RESOLVED ? JSON.stringify(this.$args[ARGS_VAL]) :
+      '<rejected> ' + this.$args[ARGS_ERR]) + ' }';
+  }); // toString
+  var $$toString = PromiseThunk.prototype.toString;
 
   // PromiseThunk.wrap(fn)
   setValue(PromiseThunk, 'wrap', function wrap(fn) {
@@ -320,7 +338,9 @@ this.PromiseThunk = function () {
   // PromiseThunk.defer()
   setValue(PromiseThunk, 'defer', function defer() {
     var p = PromiseThunk();
-    return {promise: p, resolve: p.$resolve, reject: p.$reject};
+    return {promise: p,
+            resolve: function resolve() { $$resolve.apply(p, arguments); },
+            reject:  function reject()  { $$reject.apply(p, arguments); }};
   });
 
   // isIterator(iter)
