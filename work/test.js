@@ -13,7 +13,7 @@
     'promise-light3': require('./promise-light3'),
     'promise-light4': require('./promise-light4'),
     'promise-light5': require('./promise-light5'),
-    'promise-thunk': require('./promise-thunk'),
+    'promise-thunk': require('promise-thunk'),
   };
 
   // Object.keys for ie8

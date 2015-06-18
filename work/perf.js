@@ -9,7 +9,7 @@
   var Promise4 = require('./promise-light4'); // normal object
   var Promise5 = require('./promise-light5'); // closure
   var Promise6 = require('./promise-light6'); // normal object
-  var PromiseThunk = require('./promise-thunk'); // closure function
+  var PromiseThunk = require('promise-thunk'); // closure function
 
   if (!Promise) Promise = Promise1;
 

@@ -8,7 +8,8 @@
     "bluebird": ">=2.9.25",
     "es6-promise": ">=2.1.1",
     "light-promise": ">=0.0.3",
-    "mocha": ">=2.2.4"
+    "mocha": ">=2.2.4",
+    "promise-thunk": ">=0.0.0"
   },
   "keywords": [
     "promise"
