@@ -273,7 +273,7 @@ this.PromiseThunk = function () {
   var $$toString = PromiseThunk.prototype.toString;
 
   // PromiseThunk.wrap(fn)
-  setValue(PromiseThunk, 'wrap', function wrap(fn) {
+  function wrap(fn) {
     if (typeof fn !== 'function')
       throw new TypeError('wrap: fn must be a function');
 
@@ -291,7 +291,9 @@ this.PromiseThunk = function () {
         }));
       });
     }
-  }); // wrap
+  } // wrap
+  setValue(PromiseThunk, 'wrap',     wrap);
+  setValue(PromiseThunk, 'thunkify', wrap);
 
   // PromiseThunk.resolve(val)
   setValue(PromiseThunk, 'resolve', function resolve(val) {
@@ -376,12 +378,14 @@ this.PromiseThunk = function () {
   function isIterator(iter) {
     return iter && (typeof iter.next === 'function' || isIterable(iter));
   }
+  setValue(PromiseThunk, 'isIterator', isIterator);
 
   // isIterable(iter)
   function isIterable(iter) {
     return iter && typeof Symbol === 'function' && Symbol &&
            Symbol.iterator && typeof iter[Symbol.iterator] === 'function';
   }
+  setValue(PromiseThunk, 'isIterable', isIterable);
 
   // makeArrayFromIterator(iter or array)
   function makeArrayFromIterator(iter) {
@@ -400,6 +404,7 @@ this.PromiseThunk = function () {
       return array;
     }
   }
+  setValue(PromiseThunk, 'makeArrayFromIterator', makeArrayFromIterator);
 
   if (typeof module === 'object' && module && module.exports)
     module.exports = PromiseThunk;
