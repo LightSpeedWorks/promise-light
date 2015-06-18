@@ -54,22 +54,7 @@
   }).then(function () {
     return bench(Promise5, 'p5');
   }).then(function () {
-    return bench(PromiseThunk, 'aa');
-  }).then(function () {
-    return bench(BlueBird, 'bb');
-  }).then(function () {
-    process.stdout.write('\n');
-    return bench(Promise, 'p0');
-  }).then(function () {
-    return bench(Promise1, 'p1');
-  }).then(function () {
-    return bench(Promise2, 'p2');
-  }).then(function () {
-    return bench(Promise3, 'p3');
-  }).then(function () {
-    return bench(Promise4, 'p4');
-  }).then(function () {
-    return bench(Promise5, 'p5');
+    return bench(Promise6, 'p6');
   }).then(function () {
     return bench(PromiseThunk, 'aa');
   }).then(function () {
@@ -87,6 +72,27 @@
     return bench(Promise4, 'p4');
   }).then(function () {
     return bench(Promise5, 'p5');
+  }).then(function () {
+    return bench(Promise6, 'p6');
+  }).then(function () {
+    return bench(PromiseThunk, 'aa');
+  }).then(function () {
+    return bench(BlueBird, 'bb');
+  }).then(function () {
+    process.stdout.write('\n');
+    return bench(Promise, 'p0');
+  }).then(function () {
+    return bench(Promise1, 'p1');
+  }).then(function () {
+    return bench(Promise2, 'p2');
+  }).then(function () {
+    return bench(Promise3, 'p3');
+  }).then(function () {
+    return bench(Promise4, 'p4');
+  }).then(function () {
+    return bench(Promise5, 'p5');
+  }).then(function () {
+    return bench(Promise6, 'p6');
   }).then(function () {
     return bench(PromiseThunk, 'aa');
   }).then(function () {
