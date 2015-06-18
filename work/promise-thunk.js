@@ -269,15 +269,24 @@ this.PromiseThunk = function () {
 
   // PromiseThunk.wrap(fn)
   setValue(PromiseThunk, 'wrap', function wrap(fn) {
+    if (typeof fn !== 'function')
+      throw new TypeError('wrap: fn must be a function');
+
     return function () {
       var $args = slice.call(arguments);
       return PromiseThunk(function (res, rej) {
         fn.apply(null, $args.concat(
           function (err, val) {
-            try { if (err) rej(err); else res(val); } catch (e) { rej(e); } }));
+            try {
+              if (err) rej(err);
+              else     res(val);
+            } catch (e) {
+              rej(e);
+            }
+        }));
       });
     }
-  });
+  }); // wrap
 
   // PromiseThunk.resolve(val)
   setValue(PromiseThunk, 'resolve', function resolve(val) {
@@ -287,6 +296,18 @@ this.PromiseThunk = function () {
   // PromiseThunk.reject(err)
   setValue(PromiseThunk, 'reject', function reject(err) {
     return PromiseThunk(PROMISE_REJECT, err);
+  });
+
+  // PromiseThunk.convert(promise or thunk)
+  setValue(PromiseThunk, 'convert', function convert(promise) {
+    if (isPromise(promise)) {
+      var p = PromiseThunk();
+      promise.then(
+        function (v) { $$resolve.call(p, v); },
+        function (e) { $$reject.apply(p, arguments); });
+      return p;
+    }
+    return PromiseThunk(PROMISE_RESOLVE, val);
   });
 
   // PromiseThunk.all([p, ...])
