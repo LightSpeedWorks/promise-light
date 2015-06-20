@@ -198,7 +198,7 @@ this.PromiseLight = function () {
   function toString() {
     return 'PromiseLight { ' + (
       this.$state === STATE_UNRESOLVED ? '<pending>' :
-      this.$state === STATE_RESOLVED ? JSON.stringify(this.$result) :
+      this.$state === STATE_RESOLVED ? this.$result :
       '<rejected> ' + this.$result) + ' }';
   } // toString
 
