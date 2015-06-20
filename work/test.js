@@ -104,13 +104,14 @@
           resolve(123);
           assert.equal(++seq, 3);
         });
+        assert.equal(++seq, 4);
         p.then(
           function (val) {
             assert.equal(val, 123);
-            assert.equal(++seq, 5); },
+            assert.equal(++seq, 6); },
           function (err) {
             assert(false, 'ng: ' + err); });
-        assert.equal(++seq, 4);
+        assert.equal(++seq, 5);
         return p;
       }); // it Promise setup sequence
 
