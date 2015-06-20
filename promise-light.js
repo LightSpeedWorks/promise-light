@@ -57,13 +57,13 @@ this.PromiseLight = function () {
     typeof process === 'object' && process && typeof process.nextTick === 'function' ? process.nextTick :
     function nextTick(fn) { setTimeout(fn, 0); };
 
-  var queue = new Queue();
+  var tasks = new Queue();
 
   var nextTickProgress = false;
 
   // nextTick(ctx, fn)
   function nextTick(ctx, fn) {
-    queue.push({ctx:ctx, fn:fn});
+    tasks.push({ctx:ctx, fn:fn});
 
     if (nextTickProgress) return;
     nextTickProgress = true;
@@ -71,7 +71,7 @@ this.PromiseLight = function () {
     nextTickDo(function () {
       var task;
 
-      while (task = queue.shift())
+      while (task = tasks.shift())
         task.fn.call(task.ctx);
 
       nextTickProgress = false;
