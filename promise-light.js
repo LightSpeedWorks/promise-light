@@ -245,13 +245,112 @@ this.PromiseLight = function () {
     }
   } // $$checkUnhandledRejection
 
+  // base-class-extend
+  function extend(proto) {
+    var ctor = proto.constructor;
+    function super_() { this.constructor = ctor; }
+    super_.prototype = this.prototype;
+    ctor.prototype = new super_();
+    for (var p in proto) if (proto.hasOwnProperty(p)) ctor.prototype[p] = proto[p];
+    return ctor;
+  }
+
+  // PromiseLightResolved
+  var PromiseLightResolved = extend.call(PromiseLight, {
+      constructor: function PromiseLightResolved(val) {
+        this.$result = val;
+      },
+      $state: STATE_RESOLVED,
+      then: function then(res, rej) {
+        if (res && typeof res !== 'function')
+          throw new TypeError('then resolved must be function');
+        if (rej && typeof rej !== 'function')
+          throw new TypeError('then rejected must be function');
+
+        if (res)
+          nextTick(this, function () {
+            var val = this.$result;
+            if (isPromise(val))
+              val.then(
+                function (v) {
+                  try { return res(v); }
+                  catch (e) { var errs = [e]; }
+                  try { if (rej) return rej(e); }
+                  catch (e2) { errs.push(e2); }
+                  while (e = errs.shift())
+                    console.error(COLOR_ERROR +
+                      'Unhandled rejction : ' + err2str(e) + COLOR_NORMAL);
+                },
+                function (e) {
+                  var errs = [e];
+                  try { if (rej) return rej(e); }
+                  catch (e2) { errs.push(e2); }
+                  while (e = errs.shift())
+                    console.error(COLOR_ERROR +
+                      'Unhandled rejction : ' + err2str(e) + COLOR_NORMAL);
+                });
+            else {
+              try { return res(val); }
+              catch (e) { var errs = [e]; }
+              try { if (rej) return rej(e); }
+              catch (e2) { errs.push(e2); }
+              while (e = errs.shift())
+                console.error(COLOR_ERROR +
+                  'Unhandled rejction : ' + err2str(e) + COLOR_NORMAL);
+            }
+          });
+        return $$$resolved;
+      },
+      'catch': function caught(rej) {
+        return $$$resolved;
+      }
+    });
+  var $$$resolved = new PromiseLightResolved();
+
+  // PromiseLightRejected
+  var PromiseLightRejected = extend.call(PromiseLight, {
+      constructor: function PromiseLightRejected(err) {
+        this.$result = err;
+        this.$callbacks = new Queue();
+      },
+      $state: STATE_REJECTED,
+      then: function then(res, rej) {
+        if (res && typeof res !== 'function')
+          throw new TypeError('then resolved must be function');
+        if (rej && typeof rej !== 'function')
+          throw new TypeError('then rejected must be function');
+
+        nextTick(this, function () {
+          var errs = [this.$result];
+          try { if (rej) return rej(this.$result); }
+          catch (e) { errs.push(e); }
+          while (e = errs.shift())
+            console.error(COLOR_ERROR +
+              'Unhandled rejction : ' + err2str(e) + COLOR_NORMAL); });
+        return $$$resolved;
+      },
+      'catch': function caught(rej) {
+        if (typeof rej !== 'function')
+          throw new TypeError('catch rejected must be function');
+
+        nextTick(this, function () {
+          var errs = [this.$result];
+          try { rej(this.$result); }
+          catch (e) { errs.push(e); }
+          while (e = errs.shift())
+            console.error(COLOR_ERROR +
+              'Unhandled rejction : ' + err2str(e) + COLOR_NORMAL); });
+        return $$$resolved;
+      }
+    });
+
   // PromiseLight.resolve(val)
   setValue(PromiseLight, 'resolve', function resolve(val) {
-    return new PromiseLight(PROMISE_RESOLVE, val); });
+    return new PromiseLightResolved(val); });
 
   // PromiseLight.reject(err)
   setValue(PromiseLight, 'reject', function reject(err) {
-    return new PromiseLight(PROMISE_REJECT, err); });
+    return new PromiseLightRejected(err); });
 
   // PromiseLight.all([p, ...])
   setValue(PromiseLight, 'all', all);
