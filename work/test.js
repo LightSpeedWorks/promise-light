@@ -465,6 +465,7 @@
         var keys = Object.keys(Promise).sort().join(',');
         assert(keys === 'all,race,reject,resolve' ||
                keys === 'accept,all,defer,race,reject,resolve' ||
+               keys === '_asap,_setAsap,_setScheduler,all,race,reject,resolve' || // es6-promise
                keys === '', 'Promise keys not match: keys = ' + keys);
       }) // it Promise keys
       || it('Promise keys not match');
@@ -478,7 +479,8 @@
         }
         var keys = Object.getOwnPropertyNames(Promise).filter(f).sort().join(',');
         assert(keys === 'accept,all,defer,race,reject,resolve' ||
-               keys === 'Promise,PromiseThunk,accept,all,defer,isPromise,race,reject,resolve,wrap' ||
+               keys === 'Promise,PromiseThunk,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve,thunkify,wrap' ||
+               keys === '_asap,_setAsap,_setScheduler,all,race,reject,resolve' || // es6-promise
                keys === 'all,race,reject,resolve',
                'Promise own property names match: keys = ' + keys);
       }) // it Promise own property names
