@@ -3,7 +3,7 @@
 
   console.log(process.version, process.arch);
   var BlueBird = require('bluebird');
-  var Promise1 = require('../lib/promise-light'); // closure
+  var Promise1 = require('../promise-light'); // closure
   var Promise2 = require('./promise-light2'); // normal object
   var Promise3 = require('./promise-light3'); // closure
   var Promise4 = require('./promise-light4'); // normal object
