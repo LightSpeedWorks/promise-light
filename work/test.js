@@ -3,6 +3,12 @@
 
   var assert = this.assert || require('assert');
 
+  try {
+    var PromiseThunk = require('../../promise-thunk/promise-thunk');
+  } catch (e) {
+    var PromiseThunk = require('promise-thunk');
+  }
+
   var promises = {
     Promise: /* native*/ typeof Promise === 'function' ? Promise : undefined,
     // 'light-promise': require('light-promise'),
@@ -13,7 +19,7 @@
     'promise-light3': require('./promise-light3'),
     'promise-light4': require('./promise-light4'),
     'promise-light5': require('./promise-light5'),
-    'promise-thunk': require('promise-thunk'),
+    'promise-thunk': PromiseThunk,
   };
 
   // Object.keys for ie8
@@ -130,17 +136,20 @@
         var p = new Promise(function (resolve, reject) {
           resolve(123);
         });
+        var results = [];
         p.then(
           function (val) {
-            assert.equal(val, 123); },
+            results.push(val); },
           function (err) {
-            assert(false, 'ng: ' + err); });
+            results.push(err); });
         p.then(
           function (val) {
-            assert.equal(val, 123); },
+            results.push(val); },
           function (err) {
-            assert(false, 'ng: ' + err); });
-        return p;
+            results.push(err); });
+        return p.then(function () {
+          assert.deepEqual(results, [123, 123]);
+        });
       }); // it Promise setup resolve then twice
 
       it('Promise setup resolve twice', function () {
@@ -196,14 +205,16 @@
       }); // it Promise setup error
 
       it('Promise setup unhandled error', function () {
-        var called;
+        var pass = 'none';
         new Promise(function (resolve, reject) {
           throw new Error('ng');
-        }).then(function (val) { assert(false, 'ng: ' + val); })
-        ['catch'](function (err) { assert.equal(err.message, 'ng'); called = true; } );
+        }).then(function (val) { pass = 'ng: ' + val; })
+        ['catch'](function (err) {
+          if (err.message === 'ng') pass = 'ok';
+          else pass = 'ng: ' + err.stack; });
         return delay(10, 'ok').then(
           function (val) {
-            assert(called, 'called?'); });
+            assert(pass === 'ok', pass); });
       }); // it Promise setup unhandled error
 
       it('Promise setup resolve delayed then once', function () {
@@ -510,6 +521,7 @@
         }
       }); // it ES6 iterator
 
+      key !== 'bluebird' &&
       it('iterator values', function () {
         Promise.all(iterator()).then(
           function (values) { assert.deepEqual(values, [20, 40, 60]); },
@@ -530,8 +542,10 @@
             iter[Symbol.iterator] = iterator;
           return iter;
         }
-      }); // it iterator
+      }) || // it iterator
+      it('iterator values');
 
+      key !== 'bluebird' &&
       it('iterator promises', function () {
         Promise.all(iterator()).then(
           function (values) { assert.deepEqual(values, [20, 40, 60]); },
@@ -552,7 +566,8 @@
             iter[Symbol.iterator] = iterator;
           return iter;
         }
-      }); // it iterator
+      }) || // it iterator
+      it('iterator promises not supported');
 
     }); // describe
 
