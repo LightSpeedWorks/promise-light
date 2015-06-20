@@ -258,6 +258,8 @@ this.PromiseLight = function () {
   // PromiseLightResolved
   var PromiseLightResolved = extend.call(PromiseLight, {
       constructor: function PromiseLightResolved(val) {
+        //this.$callbacks = new Queue();
+        //this.$handled = false;
         this.$result = val;
       },
       $state: STATE_RESOLVED,
@@ -310,8 +312,9 @@ this.PromiseLight = function () {
   // PromiseLightRejected
   var PromiseLightRejected = extend.call(PromiseLight, {
       constructor: function PromiseLightRejected(err) {
+        //this.$callbacks = new Queue();
+        //this.$handled = false;
         this.$result = err;
-        this.$callbacks = new Queue();
       },
       $state: STATE_REJECTED,
       then: function then(res, rej) {
