@@ -1,8 +1,8 @@
 {
   "name": "promise-light",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "promise light version",
-  "main": "lib/promise-light.js",
+  "main": "promise-light.js",
   "dependencies": {},
   "devDependencies": {
     "bluebird": ">=2.9.25",
