@@ -1,5 +1,5 @@
 console.log('promise-test.js 1');
-this.promiseTest = function ($module, $print, assert, describe, PromiseLight) {
+this.promiseTest = function ($module, $print, assert, describe, it, PromiseLight) {
   'use strict';
 
   try {
@@ -573,6 +573,7 @@ this.promiseTest = function ($module, $print, assert, describe, PromiseLight) {
     typeof $print === 'function' ? $print : require('../lib/print'),
     typeof assert === 'function' ? assert : require('../lib/assert'),
     typeof describe === 'function' ? describe : require('../lib/describe-it'),
+    typeof it === 'function' ? it : require('../lib/describe-it').it,
     typeof PromiseLight === 'function' ? PromiseLight : require('../promise-light')
     );
 console.log('promise-test.js 2');
