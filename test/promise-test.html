@@ -5,11 +5,41 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta http-equiv="Expires" content="Thu, 01 Dec 1994 16:00:00 GMT">
 
+<script>
+this.$debug = true;
+</script>
+<script src="../lib/print.js"></script>
 <script src="../promise-light.js"></script>
 <script src="../lib/assert.js"></script>
 <script src="../lib/describe-it.js"></script>
 <script>
 this.bluebird = null;
 this.require = function require() { return null; };
+this.console = this.console || $print;
+$print('$print');
+$print.log('console.log');
+$print.info('console.info');
+$print.warn('console.warn');
+$print.error('console.error');
+describe('describe1', function () {
+  it('it1', function () {
+    var p = new PromiseLight(function (res, rej) {
+      res('ok');
+    });
+    $print.info(p);
+    p = p.then(
+      function (v) { $print.info('it1 ok? ' + v); return 'ok2'; },
+      function (e) { $print.error('it1 err? ' + e); return 'err2'; });
+    $print.info(p);
+  });
+  it('it2', function () {
+    var p = PromiseLight.resolve('ok');
+    $print.info(p);
+    p = p.then(
+      function (v) { $print.info('it2 ok? ' + v); return 'ok2'; },
+      function (e) { $print.error('it2 err? ' + e); return 'err2'; });
+    $print.info(p);
+  });
+});
 </script>
 <script src="promise-test.js"></script>

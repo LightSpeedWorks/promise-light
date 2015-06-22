@@ -1,7 +1,6 @@
-(function () {
+console.log('promise-test.js 1');
+this.promiseTest = function ($module, $print, assert, describe, PromiseLight) {
   'use strict';
-
-  var assert = this.assert || require('assert');
 
   try {
     var PromiseThunk = require('../../promise-thunk/promise-thunk');
@@ -11,11 +10,10 @@
 
   var promises = {
     Promise: /* native*/ typeof Promise === 'function' ? Promise : undefined,
-    // 'light-promise': require('light-promise'),
-    bluebird: this.bluebird || require('bluebird'),
+    bluebird: typeof bluebird === 'function' ? bluebird : require('bluebird'),
     'es6-promise': require('es6-promise') && require('es6-promise').Promise,
-    'promise-light': this.PromiseLight || require('../promise-light'),
-    'promise-thunk': PromiseThunk,
+    'promise-light': PromiseLight,
+    'promise-thunk': PromiseThunk
   };
 
   // Object.keys for ie8
@@ -571,62 +569,10 @@
 
   }); // keys forEach
 
-}).call(this);
-
-/*
-
-  // main メイン
-  console.log('start');
-  timer3(500).then(function (res) {
-    console.log('ok 1st', res);
-    return timer3(500);
-  }, function (err) {
-    console.log('ng 1st', err);
-    return 'ng 1st';
-  }).then(function (res) {
-    console.log('ok 2nd', res);
-    return timer3(500);
-  }, function (err) {
-    console.log('ng 2nd', err);
-    return 'ng 2nd';
-  }).then(function (res) {
-    console.log('ok 3rd', res);
-    return timer3(500);
-  }, function (err) {
-    console.log('ng 3rd', err);
-    return 'ng 3rd';
-  }).catch(function (err) {
-    console.log('ng last', err);
-  }).then(function() {
-    console.log('final');
-  });
-
-*/
-
-/*
-
-  Promise.all([Promise.resolve(11), 22, Promise.resolve(33)])
-  .then(function (results) {
-      console.log(results);  // [11, 22, 33]
-  }); // all
-
-  Promise.race([Promise.resolve(11), 22, Promise.resolve(33)])
-  .then(function (results) {
-      console.log(results);  // 11
-  }); // race
-
-  Promise.all([])
-  .then(function (results) {
-      console.log('all []', results);  // []
-  }, function (error) {
-      console.log('all []', error);  // []
-  }); // all
-
-  Promise.race([])
-  .then(function (results) {
-      console.log('race []', results);  // undefined?
-  }, function (error) {
-      console.log('race []', error);  // undefined?
-  }); // race
-
-*/
+}(this,
+    typeof $print === 'function' ? $print : require('../lib/print'),
+    typeof assert === 'function' ? assert : require('../lib/assert'),
+    typeof describe === 'function' ? describe : require('../lib/describe-it'),
+    typeof PromiseLight === 'function' ? PromiseLight : require('../promise-light')
+    );
+console.log('promise-test.js 2');
