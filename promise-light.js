@@ -11,6 +11,19 @@ this.PromiseLight = function () {
   var COLOR_ERROR  = typeof window !== 'undefined' ? '' : '\x1b[35m';
   var COLOR_NORMAL = typeof window !== 'undefined' ? '' : '\x1b[m';
 
+  var c = typeof $print  === 'function' ? $print :
+          typeof console === 'function' ? console :
+          {info: function () {}, error: function () {}};
+
+  // Array.prototype.filter for ie8
+  if (!Array.prototype.hasOwnProperty('filter'))
+    Array.prototype.filter = function filter(fn, ctx) {
+      var n = this.length, res = [];
+      for (var i = 0; i < n; ++i)
+        fn.call(ctx, this[i], i, this) || res.push(this[i]);
+      return res;
+    };
+
   // defProp
   var defProp = function (obj) {
     if (!Object.defineProperty) return null;
@@ -165,8 +178,8 @@ this.PromiseLight = function () {
       if ($this.$state === STATE_UNRESOLVED)
         $this.$state = STATE_REJECTED, $this.$result = err, nextTick($this, $$fire);
       else {
-        console.info(COLOR_OK + $this + COLOR_NORMAL);
-        console.error(COLOR_ERROR + 'Unhandled 2nd rejection: ' + err2str(err) + COLOR_NORMAL);
+        c.info(COLOR_OK + $this + COLOR_NORMAL);
+        c.error(COLOR_ERROR + 'Unhandled 2nd rejection: ' + err2str(err) + COLOR_NORMAL);
       }
     }
 
@@ -237,9 +250,8 @@ this.PromiseLight = function () {
   // $$checkUnhandledRejection
   function $$checkUnhandledRejection() {
     if (this.$state === STATE_REJECTED && !this.$handled) {
-      console.error(COLOR_ERROR + 'Unhandled rejection ' +
-          (this.$result instanceof Error ? err2str(this.$result) : this.$result) +
-          COLOR_NORMAL);
+      c.error(COLOR_ERROR + 'Unhandled rejection ' +
+          err2str(this.$result) + COLOR_NORMAL);
       // or throw this.$result;
       // or process.emit...
     }
@@ -280,7 +292,7 @@ this.PromiseLight = function () {
                   try { if (rej) return rej(e); }
                   catch (e2) { errs.push(e2); }
                   while (e = errs.shift())
-                    console.error(COLOR_ERROR +
+                    c.error(COLOR_ERROR +
                       'Unhandled rejction : ' + err2str(e) + COLOR_NORMAL);
                 },
                 function (e) {
@@ -288,7 +300,7 @@ this.PromiseLight = function () {
                   try { if (rej) return rej(e); }
                   catch (e2) { errs.push(e2); }
                   while (e = errs.shift())
-                    console.error(COLOR_ERROR +
+                    c.error(COLOR_ERROR +
                       'Unhandled rejction : ' + err2str(e) + COLOR_NORMAL);
                 });
             else {
@@ -297,7 +309,7 @@ this.PromiseLight = function () {
               try { if (rej) return rej(e); }
               catch (e2) { errs.push(e2); }
               while (e = errs.shift())
-                console.error(COLOR_ERROR +
+                c.error(COLOR_ERROR +
                   'Unhandled rejction : ' + err2str(e) + COLOR_NORMAL);
             }
           });
@@ -328,7 +340,7 @@ this.PromiseLight = function () {
           try { if (rej) return rej(this.$result); }
           catch (e) { errs.push(e); }
           while (e = errs.shift())
-            console.error(COLOR_ERROR +
+            c.error(COLOR_ERROR +
               'Unhandled rejction : ' + err2str(e) + COLOR_NORMAL); });
         return $$$resolved;
       },
@@ -341,7 +353,7 @@ this.PromiseLight = function () {
           try { rej(this.$result); }
           catch (e) { errs.push(e); }
           while (e = errs.shift())
-            console.error(COLOR_ERROR +
+            c.error(COLOR_ERROR +
               'Unhandled rejction : ' + err2str(e) + COLOR_NORMAL); });
         return $$$resolved;
       }
@@ -405,7 +417,7 @@ this.PromiseLight = function () {
   }
 
   function err2str(err) {
-    var msg = err.stack || (err + '');
+    var msg = !!err && err.stack || (err + '');
     return msg.split('\n').filter(filterExcludeMocha).join('\n');
   }
 
