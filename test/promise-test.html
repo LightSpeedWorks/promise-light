@@ -16,29 +16,38 @@ this.$debug = true;
 this.bluebird = null;
 this.require = function require() { return null; };
 this.console = this.console || $print;
-$print('$print');
-$print.log('console.log');
-$print.info('console.info');
-$print.warn('console.warn');
-$print.error('console.error');
+var c = this.$print || this.console;
+c('$print');
+c.log('console.log');
+c.info('console.info');
+c.warn('console.warn');
+c.error('console.error');
+var a = [];
+a.push('a');
+a.push('b');
+a.push('c');
+c.log(a);
+c.log(a.shift());
 describe('describe1', function () {
   it('it1', function () {
     var p = new PromiseLight(function (res, rej) {
       res('ok');
     });
-    $print.info(p);
+    c.info('describe1 - it1 - 1 - ' + p);
     p = p.then(
-      function (v) { $print.info('it1 ok? ' + v); return 'ok2'; },
-      function (e) { $print.error('it1 err? ' + e); return 'err2'; });
-    $print.info(p);
+      function (v) { c.info('it1 ok? ' + v); return 'ok1'; },
+      function (e) { c.error('it1 err? ' + e); return 'err1'; });
+    c.info('describe1 - it1 - 2 - ' + p);
+    return p;
   });
   it('it2', function () {
     var p = PromiseLight.resolve('ok');
-    $print.info(p);
+    c.info('describe1 - it2 - 1 - ' + p);
     p = p.then(
-      function (v) { $print.info('it2 ok? ' + v); return 'ok2'; },
-      function (e) { $print.error('it2 err? ' + e); return 'err2'; });
-    $print.info(p);
+      function (v) { c.info('it2 ok? ' + v); return 'ok2'; },
+      function (e) { c.error('it2 err? ' + e); return 'err2'; });
+    c.info('describe1 - it2 - 2 - ' + p);
+    return p;
   });
 });
 </script>
