@@ -9,12 +9,7 @@
 this.$debug = true;
 </script>
 <script src="../lib/print.js"></script>
-<script src="../promise-light.js"></script>
-<script src="../lib/assert.js"></script>
-<script src="../lib/describe-it.js"></script>
 <script>
-this.bluebird = null;
-this.require = function require() { return null; };
 this.console = this.console || $print;
 var c = this.$print || this.console;
 c('$print');
@@ -22,12 +17,25 @@ c.log('console.log');
 c.info('console.info');
 c.warn('console.warn');
 c.error('console.error');
-var a = [];
-a.push('a');
-a.push('b');
-a.push('c');
-c.log(a);
-c.log(a.shift());
+</script>
+<script src="../work/promise-light4.js"></script>
+<script>
+this.PromiseLight4 = this.PromiseLight;
+if (this.Promise === this.PromiseLight4) this.Promise = undefined;
+c.log('PromiseLight4', this.PromiseLight4.name);
+</script>
+<script src="../work/promise-light6.js"></script>
+<script>
+this.PromiseLight6 = this.PromiseLight;
+if (this.Promise === this.PromiseLight6) this.Promise = undefined;
+c.log('PromiseLight6', this.PromiseLight6.name);
+</script>
+<script src="../promise-light.js"></script>
+<script src="../lib/assert.js"></script>
+<script src="../lib/describe-it.js"></script>
+<script>
+this.bluebird = null;
+this.require = function require() { return null; };
 describe('describe1', function () {
   it('it1', function () {
     var p = new PromiseLight(function (res, rej) {

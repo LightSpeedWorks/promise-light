@@ -1,5 +1,6 @@
 console.log('promise-test.js 1');
-this.promiseTest = function ($module, $print, assert, describe, it, PromiseLight) {
+this.promiseTest = function ($module, $print, assert, describe, it,
+    PromiseLight, PromiseLight4, PromiseLight6) {
   'use strict';
 
   try {
@@ -12,9 +13,13 @@ this.promiseTest = function ($module, $print, assert, describe, it, PromiseLight
     Promise: /* native*/ typeof Promise === 'function' ? Promise : undefined,
     bluebird: typeof bluebird === 'function' ? bluebird : require('bluebird'),
     'es6-promise': require('es6-promise') && require('es6-promise').Promise,
+    'promise-light4': PromiseLight4,
+    'promise-light6': PromiseLight6,
     'promise-light': PromiseLight,
     'promise-thunk': PromiseThunk
   };
+
+  console.log(promises);
 
   // Object.keys for ie8
   if (!Object.keys)
@@ -574,6 +579,8 @@ this.promiseTest = function ($module, $print, assert, describe, it, PromiseLight
     typeof assert === 'function' ? assert : require('../lib/assert'),
     typeof describe === 'function' ? describe : require('../lib/describe-it'),
     typeof it === 'function' ? it : require('../lib/describe-it').it,
-    typeof PromiseLight === 'function' ? PromiseLight : require('../promise-light')
+    typeof PromiseLight === 'function' ? PromiseLight : require('../promise-light'),
+    typeof PromiseLight4 === 'function' ? PromiseLight4 : require('../work/promise-light4'),
+    typeof PromiseLight6 === 'function' ? PromiseLight6 : require('../work/promise-light6')
     );
 console.log('promise-test.js 2');
