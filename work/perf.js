@@ -3,12 +3,12 @@
 
   console.log(process.version, process.arch);
   var BlueBird = require('bluebird');
-  var Promise1 = require('../promise-light'); // closure
+  var Promise1 = require('../promise-light'); // normal object
   var Promise2 = require('./promise-light2'); // normal object
   var Promise3 = require('./promise-light3'); // closure
   var Promise4 = require('./promise-light4'); // normal object
-  var Promise5 = require('./promise-light5'); // closure
   var Promise6 = require('./promise-light6'); // normal object
+  var Promise8 = require('./promise-light8'); // normal object
   try {
     var PromiseThunk = require('../../promise-thunk/promise-thunk'); // closure function
   } catch (e) {
@@ -57,9 +57,9 @@
   }).then(function () {
     return bench(Promise4, 'p4');
   }).then(function () {
-    return bench(Promise5, 'p5');
-  }).then(function () {
     return bench(Promise6, 'p6');
+  }).then(function () {
+    return bench(Promise8, 'p8');
   }).then(function () {
     return bench(PromiseThunk, 'aa');
   }).then(function () {
@@ -76,9 +76,9 @@
   }).then(function () {
     return bench(Promise4, 'p4');
   }).then(function () {
-    return bench(Promise5, 'p5');
-  }).then(function () {
     return bench(Promise6, 'p6');
+  }).then(function () {
+    return bench(Promise8, 'p8');
   }).then(function () {
     return bench(PromiseThunk, 'aa');
   }).then(function () {
@@ -95,9 +95,9 @@
   }).then(function () {
     return bench(Promise4, 'p4');
   }).then(function () {
-    return bench(Promise5, 'p5');
-  }).then(function () {
     return bench(Promise6, 'p6');
+  }).then(function () {
+    return bench(Promise8, 'p8');
   }).then(function () {
     return bench(PromiseThunk, 'aa');
   }).then(function () {
@@ -114,9 +114,9 @@
   }).then(function () {
     return bench(Promise4, 'p4');
   }).then(function () {
-    return bench(Promise5, 'p5');
-  }).then(function () {
     return bench(Promise6, 'p6');
+  }).then(function () {
+    return bench(Promise8, 'p8');
   }).then(function () {
     return bench(PromiseThunk, 'aa');
   }).then(function () {
@@ -133,9 +133,9 @@
   }).then(function () {
     return bench(Promise4, 'p4');
   }).then(function () {
-    return bench(Promise5, 'p5');
-  }).then(function () {
     return bench(Promise6, 'p6');
+  }).then(function () {
+    return bench(Promise8, 'p8');
   }).then(function () {
     return bench(PromiseThunk, 'aa');
   }).then(function () {
