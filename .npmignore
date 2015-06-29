@@ -1,0 +1,5 @@
+.git*
+.npm*
+lib/
+test/
+work/
