@@ -30,6 +30,7 @@ this.PromiseLight = function () {
     return x;
   };
 
+
   // nextTickDo(fn)
   var nextTickDo = typeof setImmediate === 'function' ? setImmediate :
     typeof process === 'object' && process && typeof process.nextTick === 'function' ? process.nextTick :
