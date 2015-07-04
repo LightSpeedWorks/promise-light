@@ -1,4 +1,4 @@
-[promise-light](https://www.npmjs.org/package/promise-light) - npm
+[promise-light](https://www.npmjs.com/package/promise-light) - npm
 ====
 
   `promise-light` is standard ES6 Promise implementation.<br/>
