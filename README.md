@@ -13,6 +13,9 @@
 
 # INSTALL:
 
+[![NPM](https://nodei.co/npm/promise-light.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/promise-light/)
+[![NPM](https://nodei.co/npm-dl/promise-light.png?height=2)](https://nodei.co/npm/promise-light/)
+
 for node.js or io.js
 
 ```bash
