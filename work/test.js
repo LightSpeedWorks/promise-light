@@ -8,6 +8,7 @@
   } catch (e) {
     var PromiseThunk = require('promise-thunk');
   }
+  var MiniPromise = require('./mini-promise').MiniPromise;
 
   var promises = {
     Promise: /* native*/ typeof Promise === 'function' ? Promise : undefined,
@@ -20,6 +21,7 @@
     'promise-light4': require('./promise-light4'),
     'promise-light5': require('./promise-light5'),
     'promise-thunk': PromiseThunk,
+    'mini-promise': MiniPromise,
   };
 
   // Object.keys for ie8
@@ -119,7 +121,7 @@
         return new Promise(function (resolve, reject) {
           new Promise(function (res, rej) {
             res(123);
-            resolve('ok');
+            delay(10, 'ok').then(resolve);
           });
         });
       }); // it Promise setup unhandled resolve
@@ -128,7 +130,20 @@
         return new Promise(function (resolve, reject) {
           new Promise(function (res, rej) {
             rej(new Error('ng: unhandled reject'));
-            resolve('ok');
+            delay(10, 'ok').then(resolve);
+          });
+        });
+      }); // it Promise setup unhandled reject handled
+
+      it('Promise setup unhandled reject handled', function () {
+        return new Promise(function (resolve, reject) {
+          var p = new Promise(function (res, rej) {
+            rej(new Error('ng: unhandled reject'));
+            delay(10).then(function () {
+              p.then(
+                function (val) { reject(new Error('ng: not reached')); },
+                function (err) { resolve('ok'); });
+            });
           });
         });
       }); // it Promise setup unhandled reject
@@ -470,7 +485,7 @@
           function (err) {
             assert(false, 'ng: ' + err); });
       }) // it Promise.defer without context
-      || it('Promise.defer without conext not implemented');
+      || it('Promise.defer without context not implemented');
 
       key !== 'bluebird' &&
       it('Promise keys match', function () {
@@ -487,11 +502,17 @@
         function f(x) {
           return x !== 'arguments'  && x !== 'caller' &&
                  x !== 'length'     && x !== 'name'   &&
-                 x !== 'prototype'  && x !== 'toString';
+                 x !== 'prototype'  && x !== 'toString' &&
+                 x !== 'Promise'    && x !== Promise.name &&
+                 x !== 'isIterable' && x !== 'isIterator' &&
+                 x !== 'makeArrayFromIterator' &&
+                 x !== 'nextTick'   &&
+                 x !== 'isPromise';
+                 // && x.substr(0, 1) !== '_';
         }
         var keys = Object.getOwnPropertyNames(Promise).filter(f).sort().join(',');
         assert(keys === 'accept,all,defer,race,reject,resolve' ||
-               keys === 'Promise,PromiseThunk,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve,thunkify,wrap' ||
+               keys === 'accept,all,convert,defer,race,reject,resolve,thunkify,wrap' || // PromiseThunk
                keys === '_asap,_setAsap,_setScheduler,all,race,reject,resolve' || // es6-promise
                keys === 'all,race,reject,resolve',
                'Promise own property names match: keys = ' + keys);
