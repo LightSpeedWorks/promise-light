@@ -219,11 +219,11 @@ this.MiniPromise = function () {
     return !s.match(/node_modules.*mocha/);
   }
 
-  setValue(MiniPromise, 'MiniPromise', MiniPromise);
+  //setValue(MiniPromise, 'MiniPromise', MiniPromise);
   setValue(MiniPromise, 'nextTick', nextTick);
 
-  //new MiniPromise(function () { throw new Error('ng'); })
-  //.then(function () {console.log('aaa');}, function (err) {console.log(err);});
+  if (typeof module === 'object' && module && module.exports)
+    module.exports = MiniPromise;
 
   return MiniPromise;
 
