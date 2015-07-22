@@ -37,12 +37,25 @@ this.MiniPromise = function () {
         writable: true, configurable: true}); } :
     function setValue(obj, prop, val) { obj[prop] = val; };
 
-  function MiniPromise(setup) {
+
+  function PROMISE_DEFER() {}
+  function PROMISE_RESOLVE() {}
+  function PROMISE_REJECT() {}
+
+  // MiniPromise
+  function MiniPromise(setup, val) {
     if (!(this instanceof MiniPromise)) return new MiniPromise(setup);
     var p = this;
     p.$state = STATE_UNRESOLVED, p.$value = undefined, p.$callbacks = [];
     p.$handled = false, p.$handledRejection = false;
     p.$$fire = fire;
+    if (setup === PROMISE_RESOLVE) {
+      if (val && val.then) return val.then(resolve, reject), p;
+      p.$state = STATE_RESOLVED, p.$value = val;
+      return p;
+    }
+    if (setup === PROMISE_REJECT) return reject(val), p;
+    if (setup === PROMISE_DEFER) return {promise: p, resolve: resolve, reject: reject};
     if (typeof setup === 'function')
       try { setup.call(this, resolve, reject); } catch (e) { reject(e); }
     else p.$resolve = resolve, p.$reject = reject;
@@ -62,19 +75,19 @@ this.MiniPromise = function () {
 
   // Promise#then(res, rej)
   MiniPromise.prototype.then = function then(res, rej) {
-    var p = this, q = new MiniPromise();
-    p.$callbacks.push([q, res, rej]);
+    var p = this, dfd = new MiniPromise(PROMISE_DEFER);
+    p.$callbacks.push([dfd, res, rej]);
     if (p.$state) nextTick(p.$$fire);
-    return q;
+    return dfd.promise;
   };
 
   // Promise#catch(rej)
   MiniPromise.prototype['catch'] = function caught(rej) {
     //return this.then(undefined, rej);
-    var p = this, q = new MiniPromise();
-    p.$callbacks.push([q, undefined, rej]);
+    var p = this, dfd = new MiniPromise(PROMISE_DEFER);
+    p.$callbacks.push([dfd, undefined, rej]);
     if (p.$state) nextTick(p.$$fire);
-    return q;
+    return dfd.promise;
   };
 
   // Promise#$fire()
@@ -82,19 +95,19 @@ this.MiniPromise = function () {
     var p = this, i = p.$state, v = p.$value, o;
     if (!i) return;
     while(o = p.$callbacks.shift())
-      (function (b, q, r) {
+      (function (b, dfd, r) {
         if (b)
           try {
             p.$handled = true;
             r = b(v);
             if (r && typeof r.then === 'function')
-              r.then(q.$resolve, q.$reject);
-            else q.$resolve(r);
-          } catch (e) { q.$reject(e); }
+              r.then(dfd.resolve, dfd.reject);
+            else dfd.resolve(r);
+          } catch (e) { dfd.reject(e); }
         else if (i === STATE_REJECTED)
-          p.$handled = true, q.$reject(v);
+          p.$handled = true, dfd.reject(v);
         else
-          q.$resolve();
+          dfd.resolve();
       })(o[i], o[0]);
     if (i === STATE_REJECTED && !p.$handled && !p.$handledRejection)
       nextTick(function () {
@@ -122,11 +135,11 @@ this.MiniPromise = function () {
 
   // Promise.resolve(val)
   setValue(MiniPromise, 'resolve', function resolve(val) {
-    return new MiniPromise(function (resolve, reject) { resolve(val); }); });
+    return new MiniPromise(PROMISE_RESOLVE, val); });
 
   // Promise.reject(err)
   setValue(MiniPromise, 'reject', function reject(err) {
-    return new MiniPromise(function (resolve, reject) { reject(err); }); });
+    return new MiniPromise(PROMISE_REJECT, err); });
 
   // Promise.all([p, ...])
   setValue(MiniPromise, 'all', function all(promises) {
@@ -205,9 +218,7 @@ this.MiniPromise = function () {
 
   // Promise.defer()
   setValue(MiniPromise, 'defer', function defer() {
-    var resolve, reject;
-    var p = new MiniPromise(function (res, rej) { resolve = res; reject = rej; });
-    return {promise: p, resolve: resolve, reject: reject};
+    return new MiniPromise(PROMISE_DEFER);
   });
 
   function err2str(err) {
