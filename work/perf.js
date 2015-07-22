@@ -8,7 +8,7 @@
   var Promise3 = require('./promise-light3'); // closure
   var Promise4 = require('./promise-light4'); // normal object
   //var Promise6 = require('./promise-light6'); // normal object
-  var Promise6 = require('./mini-promise').MiniPromise; // normal object
+  var Promise6 = require('./mini-promise'); // normal object
   var Promise8 = require('./promise-light8'); // normal object
   try {
     var PromiseThunk = require('../../promise-thunk/promise-thunk'); // closure function

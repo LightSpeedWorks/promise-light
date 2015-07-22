@@ -8,7 +8,7 @@
   } catch (e) {
     var PromiseThunk = require('promise-thunk');
   }
-  var MiniPromise = require('./mini-promise').MiniPromise;
+  var MiniPromise = require('./mini-promise');
 
   var promises = {
     Promise: /* native*/ typeof Promise === 'function' ? Promise : undefined,
