@@ -255,8 +255,10 @@ this.PromiseLight = function () {
         promises.forEach(function (p, i) {
           function complete(val) {
             res[i] = val; if (--n === 0) resolve(res); }
+          function error(err) {
+            if (n > 0) reject(err); n = 0; }
           if (p instanceof PromiseLight || isPromise(p))
-            return p.then(complete, reject);
+            return p.then(complete, error);
           complete(p);
         }); // promises.forEach
       }
