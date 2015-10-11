@@ -12,23 +12,48 @@ this.PromiseLight = function () {
 
   var slice = [].slice;
 
+  // defProp
+  var defProp = function (obj) {
+    if (!Object.defineProperty) return null;
+    try {
+      Object.defineProperty(obj, 'prop', {value: 'str'});
+      return obj.prop === 'str' ? Object.defineProperty : null;
+    } catch (err) { return null; }
+  } ({});
+
+  // setConst(obj, prop, val)
+  var setConst = defProp ?
+    function setConst(obj, prop, val) {
+      defProp(obj, prop, {value: val}); } :
+    function setConst(obj, prop, val) { obj[prop] = val; };
+
+  // setValue(obj, prop, val)
+  var setValue = defProp ?
+    function setValue(obj, prop, val) {
+      defProp(obj, prop, {value: val,
+        writable: true, configurable: true}); } :
+    function setValue(obj, prop, val) { obj[prop] = val; };
+
   // Queue
   function Queue() {
     this.tail = this.head = null;
   }
-  Queue.prototype.push = function push(x) {
+  // Queue#push(x)
+  setValue(Queue.prototype, 'push', function push(x) {
     if (this.tail)
       this.tail = this.tail[1] = [x, null];
     else
       this.tail = this.head = [x, null];
-  };
-  Queue.prototype.shift = function shift() {
+    return this;
+  });
+  // Queue#shift()
+  setValue(Queue.prototype, 'shift', function shift() {
     if (!this.head) return null;
     var x = this.head[0];
     this.head = this.head[1];
     if (!this.head) this.tail = null;
     return x;
-  };
+  });
 
 
   // nextTickDo(fn)
@@ -58,62 +83,6 @@ this.PromiseLight = function () {
       nextTickProgress = false;
     });
   }
-
-  // isPromise
-  function isPromise(p) {
-    return p instanceof PromiseLight || p && typeof p.then === 'function';
-  }
-
-  // isIterator(iter)
-  function isIterator(iter) {
-    return !!iter && (typeof iter.next === 'function' || isIterable(iter));
-  }
-
-  // isIterable(iter)
-  function isIterable(iter) {
-    return !!iter && typeof Symbol === 'function' && Symbol &&
-           Symbol.iterator && typeof iter[Symbol.iterator] === 'function';
-  }
-
-  // makeArrayFromIterator(iter or array)
-  function makeArrayFromIterator(iter) {
-    if (iter instanceof Array) return iter;
-    if (!isIterator(iter)) return [iter];
-    if (isIterable(iter)) iter = iter[Symbol.iterator]();
-    var array = [];
-    try {
-      for (;;) {
-        var val = iter.next();
-        if (val && val.hasOwnProperty('done') && val.done) return array;
-        if (val && val.hasOwnProperty('value')) val = val.value;
-        array.push(val);
-      }
-    } catch (error) {
-      return array;
-    }
-  }
-
-  // defProp
-  var defProp = function (obj) {
-    if (!Object.defineProperty) return null;
-    try {
-      Object.defineProperty(obj, 'prop', {value: 'str'});
-      return obj.prop === 'str' ? Object.defineProperty : null;
-    } catch (err) { return null; }
-  } ({});
-
-  // setConst(obj, prop, val)
-  var setConst = defProp ?
-    function setConst(obj, prop, val) {
-      defProp(obj, prop, {value: val}); } :
-    function setConst(obj, prop, val) { obj[prop] = val; };
-
-  // setValue(obj, prop, val)
-  var setValue = defProp ?
-    function setValue(obj, prop, val) {
-      defProp(obj, prop, {value: val,
-        writable: true, configurable: true}); } :
-    function setValue(obj, prop, val) { obj[prop] = val; };
 
   function PROMISE_RESOLVE() {}
   function PROMISE_REJECT() {}
@@ -289,6 +258,44 @@ this.PromiseLight = function () {
     var p = new PromiseLight();
     return {promise: p, resolve: p.$resolve, reject: p.$reject};
   });
+
+  // isPromise
+  setValue(PromiseLight, 'isPromise', isPromise);
+  function isPromise(p) {
+    return p instanceof PromiseLight || p && typeof p.then === 'function';
+  }
+
+  // isIterator(iter)
+  setValue(PromiseLight, 'isIterator', isIterator);
+  function isIterator(iter) {
+    return !!iter && (typeof iter.next === 'function' || isIterable(iter));
+  }
+
+  // isIterable(iter)
+  setValue(PromiseLight, 'isIterable', isIterable);
+  function isIterable(iter) {
+    return !!iter && typeof Symbol === 'function' && Symbol &&
+           Symbol.iterator && typeof iter[Symbol.iterator] === 'function';
+  }
+
+  // makeArrayFromIterator(iter or array)
+  setValue(PromiseLight, 'makeArrayFromIterator', makeArrayFromIterator);
+  function makeArrayFromIterator(iter) {
+    if (iter instanceof Array) return iter;
+    if (!isIterator(iter)) return [iter];
+    if (isIterable(iter)) iter = iter[Symbol.iterator]();
+    var array = [];
+    try {
+      for (;;) {
+        var val = iter.next();
+        if (val && val.hasOwnProperty('done') && val.done) return array;
+        if (val && val.hasOwnProperty('value')) val = val.value;
+        array.push(val);
+      }
+    } catch (error) {
+      return array;
+    }
+  }
 
   if (typeof module === 'object' && module.exports)
     module.exports = PromiseLight;
