@@ -200,7 +200,7 @@ this.PromiseLight = function () {
 
     var p = new PromiseLight();
     this.$callbacks.push([
-      function (err) { try { $$resolve.call(p, rej(err)); } catch (e) { $$reject.call(p, e); } },
+      function (err) { try { rej ? $$resolve.call(p, rej(err)) : $$reject.call(p, err); } catch (e) { $$reject.call(p, e); } },
       function (val) { try { $$resolve.call(p, res(val)); } catch (e) { $$reject.call(p, e); } }
     ]);
     nextTick(this, $$fire);
