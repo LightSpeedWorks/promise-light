@@ -3,7 +3,7 @@
 
   console.log(process.version, process.arch);
   var BlueBird = require('bluebird');
-  var Promise1 = require('../promise-light'); // normal object
+  var PromiseLight = require('../promise-light'); // normal object
   var Promise2 = require('./promise-light2'); // normal object
   var Promise3 = require('./promise-light3'); // closure
   var Promise4 = require('./promise-light4'); // normal object
@@ -13,11 +13,12 @@
   try {
     var PromiseThunk = require('../../promise-thunk/promise-thunk'); // closure function
   } catch (e) {
-    throw e;
+    console.error(e);
     var PromiseThunk = require('promise-thunk'); // closure function
   }
 
-  if (!Promise) Promise = Promise1;
+  // native Promise is null then use PromiseLight
+  if (!Promise) Promise = PromiseLight;
 
   var N = 1e3, M = 100;
 
@@ -50,7 +51,7 @@
   }
 
   bench(Promise, 'p0').then(function () {
-    return bench(Promise1, 'p1');
+    return bench(PromiseLight, 'pl');
   }).then(function () {
 //    return bench(Promise2, 'p2');
 //  }).then(function () {
@@ -62,14 +63,14 @@
   }).then(function () {
     return bench(Promise8, 'p8');
   }).then(function () {
-    return bench(PromiseThunk, 'aa');
+    return bench(PromiseThunk, 'pt');
   }).then(function () {
     return bench(BlueBird, 'bb');
   }).then(function () {
     process.stdout.write('\n');
     return bench(Promise, 'p0');
   }).then(function () {
-    return bench(Promise1, 'p1');
+    return bench(PromiseLight, 'pl');
   }).then(function () {
 //    return bench(Promise2, 'p2');
 //  }).then(function () {
@@ -81,14 +82,14 @@
   }).then(function () {
     return bench(Promise8, 'p8');
   }).then(function () {
-    return bench(PromiseThunk, 'aa');
+    return bench(PromiseThunk, 'pt');
   }).then(function () {
     return bench(BlueBird, 'bb');
   }).then(function () {
     process.stdout.write('\n');
     return bench(Promise, 'p0');
   }).then(function () {
-    return bench(Promise1, 'p1');
+    return bench(PromiseLight, 'pl');
   }).then(function () {
 //    return bench(Promise2, 'p2');
 //  }).then(function () {
@@ -100,14 +101,14 @@
   }).then(function () {
     return bench(Promise8, 'p8');
   }).then(function () {
-    return bench(PromiseThunk, 'aa');
+    return bench(PromiseThunk, 'pt');
   }).then(function () {
     return bench(BlueBird, 'bb');
   }).then(function () {
     process.stdout.write('\n');
     return bench(Promise, 'p0');
   }).then(function () {
-    return bench(Promise1, 'p1');
+    return bench(PromiseLight, 'pl');
   }).then(function () {
 //    return bench(Promise2, 'p2');
 //  }).then(function () {
@@ -119,14 +120,14 @@
   }).then(function () {
     return bench(Promise8, 'p8');
   }).then(function () {
-    return bench(PromiseThunk, 'aa');
+    return bench(PromiseThunk, 'pt');
   }).then(function () {
     return bench(BlueBird, 'bb');
   }).then(function () {
     process.stdout.write('\n');
     return bench(Promise, 'p0');
   }).then(function () {
-    return bench(Promise1, 'p1');
+    return bench(PromiseLight, 'pl');
   }).then(function () {
 //    return bench(Promise2, 'p2');
 //  }).then(function () {
@@ -138,7 +139,7 @@
   }).then(function () {
     return bench(Promise8, 'p8');
   }).then(function () {
-    return bench(PromiseThunk, 'aa');
+    return bench(PromiseThunk, 'pt');
   }).then(function () {
     return bench(BlueBird, 'bb');
   }).then(function () {
