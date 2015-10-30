@@ -24,15 +24,23 @@ this.PromiseLight = function () {
 	// setConst(obj, prop, val)
 	var setConst = defProp ?
 		function setConst(obj, prop, val) {
-			defProp(obj, prop, {value: val}); } :
-		function setConst(obj, prop, val) { obj[prop] = val; };
+			defProp(obj, prop, {value: val}); return val; } :
+		function setConst(obj, prop, val) { return obj[prop] = val; };
 
 	// setValue(obj, prop, val)
 	var setValue = defProp ?
 		function setValue(obj, prop, val) {
 			defProp(obj, prop, {value: val,
-				writable: true, configurable: true}); } :
-		function setValue(obj, prop, val) { obj[prop] = val; };
+				writable: true, configurable: true}); return val; } :
+		function setValue(obj, prop, val) { return obj[prop] = val; };
+
+	// getProto(obj)
+	var getProto = Object.getPrototypeOf || {}.__proto__ ?
+		function getProto(obj) { return obj.__proto__; } : null;
+
+	// setProto(obj, proto)
+	var setProto = Object.setPrototypeOf || {}.__proto__ ?
+		function setProto(obj, proto) { obj.__proto__ = proto; } : null;
 
 	// Queue
 	function Queue() {
@@ -54,7 +62,6 @@ this.PromiseLight = function () {
 		if (!this.head) this.tail = null;
 		return x;
 	});
-
 
 	// nextTickDo(fn)
 	var nextTickDo = typeof setImmediate === 'function' ? setImmediate :
@@ -216,6 +223,7 @@ this.PromiseLight = function () {
 		if (isIterator(promises)) promises = makeArrayFromIterator(promises);
 		if (!(promises instanceof Array))
 			throw new TypeError('promises must be an array');
+
 		return new PromiseLight(
 			function promiseAll(resolve, reject) {
 				var n = promises.length;
@@ -239,6 +247,7 @@ this.PromiseLight = function () {
 		if (isIterator(promises)) promises = makeArrayFromIterator(promises);
 		if (!(promises instanceof Array))
 			throw new TypeError('promises must be an array');
+
 		return new PromiseLight(
 			function promiseRace(resolve, reject) {
 				promises.forEach(function (p) {
@@ -262,7 +271,7 @@ this.PromiseLight = function () {
 	// isPromise
 	setValue(PromiseLight, 'isPromise', isPromise);
 	function isPromise(p) {
-		return p instanceof PromiseLight || p && typeof p.then === 'function';
+		return p instanceof PromiseLight || !!p && typeof p.then === 'function';
 	}
 
 	// isIterator(iter)
@@ -274,8 +283,8 @@ this.PromiseLight = function () {
 	// isIterable(iter)
 	setValue(PromiseLight, 'isIterable', isIterable);
 	function isIterable(iter) {
-		return !!iter && typeof Symbol === 'function' && Symbol &&
-					 Symbol.iterator && typeof iter[Symbol.iterator] === 'function';
+		return !!iter && typeof Symbol === 'function' &&
+					!!Symbol.iterator && typeof iter[Symbol.iterator] === 'function';
 	}
 
 	// makeArrayFromIterator(iter or array)
@@ -295,7 +304,7 @@ this.PromiseLight = function () {
 		} catch (error) {
 			return array;
 		}
-	}
+	} // makeArrayFromIterator
 
 	if (typeof module === 'object' && module.exports)
 		module.exports = PromiseLight;
