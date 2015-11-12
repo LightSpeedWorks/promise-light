@@ -22,7 +22,7 @@
 	// native Promise is null then use PromiseLight
 	if (!Promise) Promise = PromiseLight;
 
-	var N = 1e3, M = 100;
+	var N = 1e3, M = 200;
 
 	function bench(Promise, nm) {
 		var start = Date.now();
