@@ -6,6 +6,8 @@ this.PromiseLight = function () {
 	var STATE_UNRESOLVED = -1;
 	var STATE_RESOLVED = 0;
 	var STATE_REJECTED = 1;
+	var ARGS_RESOLVE = 2;
+	var ARGS_REJECT = 3;
 
 	var COLOR_ERROR  = typeof window !== 'undefined' ? '' : '\x1b[35m';
 	var COLOR_NORMAL = typeof window !== 'undefined' ? '' : '\x1b[m';
@@ -171,12 +173,12 @@ this.PromiseLight = function () {
 		var $this = this;
 		var $state = this.$state;
 		var $result = this.$result;
-		var $callbacks = $this.$callbacks;
+		var $callbacks = this.$callbacks;
 		var elem;
 		while (elem = $callbacks.shift()) {
 			(function (elem) {
 				$this.$handled = true;
-				var resolve = elem[2], reject = elem[3];
+				var resolve = elem[ARGS_RESOLVE], reject = elem[ARGS_REJECT];
 				var completed = elem[$state];
 				function complete(val) {
 					resolve(completed.call($this, val)); }
