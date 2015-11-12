@@ -17,12 +17,12 @@
 		typeof process !== 'undefined' && process && typeof process.nextTick === 'function' ? process.nextTick :
 		function nextTickDo(fn) { setTimeout(fn, 0); };
 
-	var STATE_UNRESOLVED = 0;
-	var STATE_REJECTED = 1;
-	var STATE_RESOLVED = 2;
-	var ARGS_CALLBACK = 3;
-	var ARGS_PROMISE = 0;
-	var ARGS_PARENT_PROMISE = 4;
+	var STATE_UNRESOLVED = -1;
+	var STATE_REJECTED = 0;
+	var STATE_RESOLVED = 1;
+	var ARGS_CALLBACK = 2;
+	var ARGS_RESOLVE = 3;
+	var ARGS_REJECT = 4;
 
 	// proto
 	var proto = PromiseCore.prototype;
@@ -32,7 +32,7 @@
 	function PROMISE_THEN() {}
 
 	// PromiseCore
-	function PromiseCore(setup, val) {
+	function PromiseCore(setup, val, rej, cb, pp) {
 
 		//var $this = function (callback) {
 		//	return new PromiseCore(PROMISE_THEN, null, null, callback, $this);
@@ -59,27 +59,64 @@
 
 		if (typeof setup === 'function') {
 
-			if (setup === PROMISE_THEN) {
-				var pp = arguments[ARGS_PARENT_PROMISE];
-				arguments[ARGS_PROMISE] = $this;
-				delete arguments[--arguments.length];
-				pp.$callbacks.push(arguments);
-				if (pp.$state !== STATE_UNRESOLVED) nextTickDo(function () { pp.$fire(); }); //pp.$next();
+			if (setup === PROMISE_RESOLVE) {
+				$this.$state = STATE_RESOLVED;
+				$this.$result = val;
+				nextTickDo(function () { $this.$fire(); });
+			}
+			else if (setup === PROMISE_REJECT) {
+				$this.$state = STATE_REJECTED;
+				$this.$result = val;
+				nextTickDo(function () { $this.$fire(); });
+			}
+			else if (setup === PROMISE_THEN) {
+				pp.$callbacks.push([val, rej, cb, resolve, reject]);
+				if (pp.$state !== STATE_UNRESOLVED)
+					nextTickDo(function () { pp.$fire(); });
 				return $this;
 			}
-
-			if (setup === PROMISE_RESOLVE)
-				return $this.$resolve(val), $this;
-
-			if (setup === PROMISE_REJECT)
-				return $this.$reject(val), $this;
-
-			setup(resolve, reject);
+			else {
+				setup(resolve, reject);
+			}
 		}
 
-		function resolve(v) { $this.$resolve(v); }
-		function reject(e) { $this.$reject(e); }
 		return $this;
+
+		function resolve(val) {
+			if ($this.$state !== STATE_UNRESOLVED) return;
+
+			if (val && val.then)
+				return val.then(
+					function (v) {
+						$this.$state = STATE_RESOLVED;
+						$this.$result = v;
+						//$this.$next();
+						nextTickDo(function () { $this.$fire(); });
+					},
+					function (e) {
+						$this.$reject(e);
+					}), undefined;
+
+			$this.$state = STATE_RESOLVED;
+			$this.$result = val;
+			nextTickDo(function () { $this.$fire(); });
+		}
+
+		function reject(err) {
+			if ($this.$state === STATE_RESOLVED)
+				return console.error(colors.purple(
+					'resolved promise rejected: ' +
+					$this + ': ' + err));
+
+			if ($this.$state === STATE_REJECTED)
+				return console.error(colors.purple(
+					'rejected twice: ' +
+					$this + ': ' + err));
+
+			$this.$state = STATE_REJECTED;
+			$this.$result = err;
+			nextTickDo(function () { $this.$fire(); });
+		}
 	}
 
 	// initial values into prototype (primitives only)
@@ -97,87 +134,55 @@
 		return new PromiseCore(PROMISE_THEN, rejected, null, null, this);
 	};
 
-	// resolve
-	proto.$resolve = function resolve(val) {
-		if (this.$state !== STATE_UNRESOLVED) return;
-		var $this = this;
-		if (val && val.then)
-			return val.then(
-				function (v) {
-					$this.$state = STATE_RESOLVED;
-					$this.$result = v;
-					//$this.$next();
-					nextTickDo(function () { $this.$fire(); });
-				},
-				function (e) {
-					$this.$reject(e);
-				}), undefined;
-
-		this.$state = STATE_RESOLVED;
-		this.$result = val;
-		//this.$next();
-		nextTickDo(function () { $this.$fire(); });
-	};
-
-	// reject
-	proto.$reject = function reject(err) {
-		if (this.$state === STATE_RESOLVED)
-			return console.error(colors.purple('resolved promise rejected: ' + this + ': ' + err));
-		if (this.$state === STATE_REJECTED)
-			return console.error(colors.purple('rejected twice: ' + this + ': ' + err));
-
-		var $this = this;
-		this.$state = STATE_REJECTED;
-		this.$result = err;
-		//this.$next();
-		nextTickDo(function () { $this.$fire(); });
-	};
-
 	// fire
 	proto.$fire = function fire() {
-		if (this.$state === STATE_UNRESOLVED) return;
+		//if (this.$state === STATE_UNRESOLVED) return;
 		var $this = this;
-		var state = this.$state;
-		var callbacks = this.$callbacks;
-		this.$callbacks = [];
-		//callbacks.forEach((callback) => {
-		for (var i = 0, n = callbacks.length; i < n; ++i) {
-			var callback = callbacks[i];
+		var $state = this.$state;
+		var $result = this.$result;
+		var $callbacks = this.$callbacks;
+		var elem;
 
-			try {
-				var p = callback[ARGS_PROMISE], r;
-				var s = callback[state];
-				var cb = callback[ARGS_CALLBACK];
+		while (elem = $callbacks.shift()) {
+			(function (elem) {
+				var resolve = elem[ARGS_RESOLVE], reject = elem[ARGS_REJECT];
+				var r;
+				var cb = elem[ARGS_CALLBACK];
+				var completed = elem[$state];
+				//function complete(val) {
+				//	resolve(completed.call($this, val)); }
 
 				$this.$handled = true;
 
-				if (s)
-					r = s.call(null, $this.$result);
-				else if (cb)
-					r = cb.apply(null,
-						state === STATE_RESOLVED ?
-							[null, $this.$result] : [$this.$result]);
-				else if (state === STATE_REJECTED)
-					return p.$reject($this.$result);
-				else
-					return p.$resolve();
-
-				if (typeof r === 'function')
-					(function (p, r) {
-						r(function (e, v) { return e ? p.$reject(e) : p.$resolve(v); });
-					})(p, r);
-				else
-					p.$resolve(r);
-			} catch (e) {
 				try {
-					p.$reject(e);
-				}
-				catch (e2) {
-					console.error(colors.purple('error in handler: ' + $this + ': ' + e.stack + '\n' + e2.stack));
-				}
-			}
+					if (completed)
+						r = completed.call(null, $result);
+					else if (cb)
+						r = cb.apply(null,
+							$state === STATE_RESOLVED ?
+								[null, $result] : [$result]);
+					else if ($state === STATE_REJECTED)
+						return reject($result);
+					else
+						return resolve();
 
-		} // for
+					if (typeof r === 'function')
+						r(function (e, v) { return e ? reject(e) : resolve(v); });
+					else
+						resolve(r);
+				} catch (e) {
+					try {
+						reject(e);
+					}
+					catch (e2) {
+						console.error(colors.purple(
+							'error in handler: ' +
+							$this + ': ' + e.stack + '\n' + e2.stack));
+					}
+				}
+			})(elem);
+
+		} // while
 
 		if (!this.$handled && this.$state === STATE_REJECTED)
 			nextTickDo(function () { $this.$check(); });
