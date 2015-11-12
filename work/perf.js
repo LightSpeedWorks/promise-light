@@ -4,6 +4,7 @@
 	console.log(process.version, process.arch);
 	var BlueBird = require('bluebird');
 	var PromiseLight = require('../promise-light'); // normal object
+	Promise = PromiseLight
 	var PromiseCore = require('./promise-core'); // normal object and thunk function
 	var Promise2 = require('./promise-light2'); // normal object
 	var Promise3 = require('./promise-light3'); // closure
@@ -20,7 +21,6 @@
 
 	// native Promise is null then use PromiseLight
 	if (!Promise) Promise = PromiseLight;
-	Promise = PromiseLight
 
 	var N = 1e3, M = 100;
 
@@ -32,7 +32,7 @@
 
 		function next() {
 			if (++j > M) {
-				process.stdout.write(nm + ': ' + ((Date.now() - start) / 1000.0).toFixed(3) + '\t');
+				process.stdout.write(nm + ': ' + ((Date.now() - start) / 1000.0).toFixed(3) + '   ');
 				return dfd.resolve();
 			}
 
