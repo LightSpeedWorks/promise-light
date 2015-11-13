@@ -122,12 +122,13 @@
 		if ($result instanceof Error) $state = STATE_REJECTED;
 
 		while (elem = $callbacks.shift()) {
-			(function (elem) {
+			//(function (elem) {
 				var resolve = elem[ARGS_RESOLVE];
 				var reject = elem[ARGS_REJECT];
 				var completed = elem[$state];
+				//var completed = elem[$state] || $state === STATE_RESOLVED ? resolve : reject;
 
-				function complete(val) {
+				var complete = function complete(val) {
 					try {
 						resolve(completed(val));
 					} catch (err) {
@@ -137,32 +138,36 @@
 								colors.purple(': ' + (val && val.stack || val)));
 						reject(err);
 					}
-				}
+				};
 
 				$this.$handled = true;
 
-				try {
+				//try {
 					if ($state === STATE_RESOLVED) {
 						if (!completed)
-							return resolve($result);
+							return resolve($result); // TODO check spec: $result or undefined?
 
 						if ($result && $result.then)
-							return $result.then(complete, reject);
+							return function (complete, reject) { return $result.then(complete, reject); } (complete, reject);
 
 						if (typeof $result === 'function')
-							return $result(function (e, v) {
-								return e ? reject(e) : resolve(v);
-							});
+							return $result(function (complete, reject) { return function (e, v) {
+								return e ? reject(e) : complete(v);
+							}} (complete, reject));
 					}
 					else { // $state === STATE_REJECTED
 						if (!completed)
 							return reject($result);
 					}
 					complete($result);
-				} catch (err) {
-					reject(err);
-				}
-			})(elem);
+				//} catch (err) {
+				//	if ($state === STATE_REJECTED)
+				//		console.error(colors.purple(
+				//			'error in handler: ') + $this +
+				//			colors.purple(': ' + ($result && $result.stack || $result)));
+				//	reject(err);
+				//}
+			//})(elem);
 
 		} // while
 
