@@ -107,6 +107,22 @@
 		}
 	});
 
+	var nextTickTasks = new Queue2();
+	var nextTickProgress = false;
+	// nextTick2(ctx, fn)
+	function nextTick2(ctx, fn) {
+		nextTickTasks.push(ctx, fn);
+		if (nextTickProgress) return;
+
+		nextTickProgress = true;
+
+		nextTickDo(function (obj) {
+			while (obj = nextTickTasks.shift())
+				obj.y.call(obj.x);
+			nextTickProgress = false;
+		});
+	}
+
 	var STATE_UNRESOLVED = -1;
 	var STATE_REJECTED = 0;
 	var STATE_RESOLVED = 1;
@@ -116,6 +132,7 @@
 	function PROMISE_RESOLVE() {}
 	function PROMISE_REJECT() {}
 	function PROMISE_THEN() {}
+	function PROMISE_DEFER() {}
 
 	// PromiseCore
 	var PromiseCore = extend.call(Object, {
@@ -125,7 +142,7 @@
 		$result: undefined,
 		$handled: false,
 
-		constructor: function PromiseCore(setup, val, res, pp) {
+		constructor: function PromiseCore(setup, val, res, parent) {
 
 /*
 			var $this = function (callback) {
@@ -146,20 +163,23 @@
 			// Queue { head, tail }
 			$this.tail = $this.head = undefined;
 
-			if (setup === PROMISE_RESOLVE) {
+			if (setup === PROMISE_DEFER) {
+				return {promise: $this, resolve:resolve, reject:reject};
+			}
+			else if (setup === PROMISE_RESOLVE) {
 				$this.$state = STATE_RESOLVED;
 				$this.$result = val;
-				nextTickDo(function () { $this.$fire(); });
+				nextTick2($this, $fire);
+			}
+			else if (setup === PROMISE_THEN) {
+				parent.push([val, res, resolve, reject]);
+				if (parent.$state !== STATE_UNRESOLVED)
+					nextTick2(parent, $fire);
 			}
 			else if (setup === PROMISE_REJECT) {
 				$this.$state = STATE_REJECTED;
 				$this.$result = val;
-				nextTickDo(function () { $this.$fire(); });
-			}
-			else if (setup === PROMISE_THEN) {
-				pp.push([val, res, resolve, reject]);
-				if (pp.$state !== STATE_UNRESOLVED)
-					nextTickDo(function () { pp.$fire(); });
+				nextTick2($this, $fire);
 			}
 			else if (typeof setup === 'function') {
 				setup(resolve, reject);
@@ -172,7 +192,7 @@
 
 				$this.$state = STATE_RESOLVED;
 				$this.$result = val;
-				nextTickDo(function () { $this.$fire(); });
+				nextTick2($this, $fire);
 			}
 
 			function reject(err) {
@@ -188,7 +208,7 @@
 
 				$this.$state = STATE_REJECTED;
 				$this.$result = err;
-				nextTickDo(function () { $this.$fire(); });
+				nextTick2($this, $fire);
 			}
 		},
 
@@ -220,71 +240,10 @@
 		},
 
 		// fire
-		$fire: function fire() {
-			var $this = this;
-			var $state = this.$state;
-			var $result = this.$result;
-			var elem;
-
-			if ($result instanceof Error) $state = STATE_REJECTED;
-
-			while (elem = this.shift()) {
-				var resolve = elem[ARGS_RESOLVE];
-				var reject = elem[ARGS_REJECT];
-				var completed = elem[$state];
-
-				$this.$handled = true;
-
-				if (!completed)
-					return ($state === STATE_RESOLVED ? resolve : reject) ($result);
-					// TODO check spec: resolve($result or undefined?)
-
-				var complete = function () {
-					return function complete(val) {
-						try {
-							resolve(completed(val));
-						} catch (err) {
-							if ($state === STATE_REJECTED)
-								console.error(colors.purple(
-									'error in handler: ') + $this +
-									colors.purple(': ' + (val && val.stack || val)));
-							reject(err);
-						}
-					};
-				} (resolve, reject);
-
-				if ($state === STATE_RESOLVED) {
-					if ($result && $result.then)
-						return function (complete, reject) {
-							return $result.then(complete, reject);
-						} (complete, reject);
-
-					if (typeof $result === 'function')
-						return $result(function (complete, reject) {
-							return function (e, v) {
-								return e ? reject(e) : complete(v);
-							}
-						} (complete, reject));
-				}
-				complete($result);
-
-			} // while
-
-			if (!this.$handled && this.$state === STATE_REJECTED)
-				nextTickDo(function () { $this.$check(); });
-		},
+		$fire: $fire,
 
 		// check
-		$check: function check() {
-			if (!this.$handled) console.error(colors.purple('unhandled rejection: ' + this));
-		},
-
-		// next
-		$next: function next() {
-			if (this.$state === STATE_UNRESOLVED) return;
-			var $this = this;
-			nextTickDo(function () { $this.$fire(); });
-		},
+		$check: $check,
 
 		// toString
 		toString: function toString() {
@@ -309,9 +268,7 @@
 
 		// defer
 		defer: function defer() {
-			var resolved, rejected;
-			var p = new PromiseCore(function (res, rej) { resolved = res; rejected = rej; });
-			return {promise: p, resolve: resolved, reject:  rejected};
+			return new PromiseCore(PROMISE_DEFER);
 		},
 
 		all: Promise.all,
@@ -326,17 +283,77 @@
 		// isPromise
 		isPromise: isPromise
 
-	}); // extend
+	}); // extend PromiseCore
 
+	// fire
+	function $fire() {
+		var $this = this;
+		var $state = this.$state;
+		var $result = this.$result;
+		var elem;
+
+		if ($result instanceof Error) $state = STATE_REJECTED;
+
+		while (elem = this.shift()) {
+			var resolve = elem[ARGS_RESOLVE];
+			var reject = elem[ARGS_REJECT];
+			var completed = elem[$state];
+
+			this.$handled = true;
+
+			if (!completed) {
+				if ($state === STATE_RESOLVED)
+					resolve($result);
+				else
+					reject($result);
+				continue;
+			}
+			// TODO check spec: resolve($result or undefined?)
+
+			void function (resolve, reject, completed) {
+
+				if ($state === STATE_RESOLVED) {
+					if ($result && $result.then)
+						return $result.then(complete, reject);
+
+					if (typeof $result === 'function')
+						return $result(function (e, v) {
+							return e ? reject(e) : complete(v);
+						});
+				}
+				complete($result);
+
+				function complete(val) {
+					try {
+						resolve(completed(val));
+					} catch (err) {
+						if ($state === STATE_REJECTED)
+							console.error(colors.purple(
+								'error in handler: ') + $this +
+								colors.purple(': ' + (val && val.stack || val)));
+						reject(err);
+					}
+				};
+
+			} (resolve, reject, completed);
+
+		} // while
+
+		if (!this.$handled && $state === STATE_REJECTED)
+			nextTick2(this, $check);
+
+	} // fire
+
+	// check unhandled rejection
+	function $check() {
+		if (!this.$handled)
+			console.error(colors.purple('unhandled rejection: ' + this));
+	}
+
+	// isPromise
 	function isPromise(p) {
 		return !!p && typeof p.then === 'function';
 	}
-
-	//for (var p in PromiseCore.prototype) {
-	//	var v = PromiseCore.prototype[p];
-	//	delete PromiseCore.prototype[p];
-	//	Object.defineProperty(PromiseCore.prototype, p, {writable: true, configurable: true, value: v});
-	//}
 
 	if (typeof module === 'object' && module && module.exports)
 		module.exports = PromiseCore;
