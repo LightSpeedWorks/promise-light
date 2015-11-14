@@ -1,12 +1,38 @@
 (function () {
 	'use strict';
 
-	var COLORS = {red: '31', green: '32', purple: '35', cyan: '36'};
+	var COLORS = {red: '31', green: '32', purple: '35', cyan: '36', yellow: '33'};
 	var colors = Object.keys(COLORS).reduce(function (obj, k) {
 		obj[k] = typeof window === 'object' ? function (x) { return x; } :
 			function (x) { return '\x1b[' + COLORS[k] + 'm' + x + '\x1b[m'; };
 		return obj;
 	}, {});
+
+	// defProp(obj, prop, propDesc)
+	var defProp = function (obj) {
+		if (!Object.defineProperty) return null;
+		try {
+			Object.defineProperty(obj, 'prop', {value: 'str'});
+			return obj.prop === 'str' ? Object.defineProperty : null;
+		} catch (err) { return null; }
+	} ({});
+
+	// setConst(obj, prop, val)
+	var setConst = defProp ?
+		function setConst(obj, prop, val) {
+			defProp(obj, prop, {value: val}); } :
+		function setConst(obj, prop, val) { obj[prop] = val; };
+
+	// setValue(obj, prop, val)
+	var setValue = defProp ?
+		function setValue(obj, prop, val) {
+			defProp(obj, prop, {value: val,
+				writable: true, configurable: true}); } :
+		function setValue(obj, prop, val) { obj[prop] = val; };
+
+	// getProto(obj)
+	var getProto = Object.getPrototypeOf || {}.__proto__ ?
+		function getProto(obj) { return obj.__proto__; } : null;
 
 	// setProto
 	var setProto = typeof Object.setPrototypeOf === 'function' ?
@@ -21,19 +47,20 @@
 	// base-class-extend
 	function extend(proto, statics) {
 		var ctor = proto.constructor;
-		function super_() { this.constructor = ctor; }
+		function super_() {
+			setValue(this, 'constructor', ctor);
+			//this.constructor = ctor;
+		}
 		super_.prototype = this.prototype;
 		ctor.prototype = new super_();
 		for (var p in proto)
 			if (proto.hasOwnProperty(p))
+				setValue(ctor.prototype, p, proto[p]);
 				//ctor.prototype[p] = proto[p];
-				Object.defineProperty(ctor.prototype, p,
-					{writable: true, configurable: true, value: proto[p]});
 		for (var p in statics)
 			if (statics.hasOwnProperty(p))
+				setValue(ctor, p, statics[p]);
 				//ctor[p] = statics[p];
-				Object.defineProperty(ctor, p,
-					{writable: true, configurable: true, value: statics[p]});
 		return ctor;
 	}
 
@@ -54,6 +81,28 @@
 			var x = this.head.data;
 			this.head = this.head.next;
 			if (!this.head) this.tail = undefined;
+			return x;
+		}
+	});
+
+	// Queue2
+	var Queue2 = extend.call(Object, {
+		constructor: function Queue() {
+			if (!(this instanceof Queue)) return new Queue();
+			this.tail = this.head = undefined;
+		},
+		push: function push(x, y) {
+			if (this.tail)
+				this.tail = this.tail.next = {x:x, y:y, next:undefined};
+			else
+				this.tail = this.head = {x:x, y:y, next:undefined};
+		},
+		shift: function shift() {
+			if (!this.head) return undefined;
+			var x = this.head;
+			this.head = this.head.next;
+			if (!this.head) this.tail = undefined;
+			x.next = undefined;
 			return x;
 		}
 	});
@@ -94,7 +143,8 @@
 */
 			var $this = this;
 
-			$this.$callbacks = new Queue;
+			// Queue { head, tail }
+			$this.tail = $this.head = undefined;
 
 			if (setup === PROMISE_RESOLVE) {
 				$this.$state = STATE_RESOLVED;
@@ -107,7 +157,7 @@
 				nextTickDo(function () { $this.$fire(); });
 			}
 			else if (setup === PROMISE_THEN) {
-				pp.$callbacks.push([val, res, resolve, reject]);
+				pp.push([val, res, resolve, reject]);
 				if (pp.$state !== STATE_UNRESOLVED)
 					nextTickDo(function () { pp.$fire(); });
 			}
@@ -142,6 +192,23 @@
 			}
 		},
 
+		// push
+		push: function push(x) {
+			if (this.tail)
+				this.tail = this.tail.next = {data:x, next:undefined};
+			else
+				this.tail = this.head = {data:x, next:undefined};
+		},
+
+		// shift
+		shift: function shift() {
+			if (!this.head) return undefined;
+			var x = this.head.data;
+			this.head = this.head.next;
+			if (!this.head) this.tail = undefined;
+			return x;
+		},
+
 		// then
 		then: function then(resolved, rejected) {
 			return new PromiseCore(PROMISE_THEN, rejected, resolved, this);
@@ -157,12 +224,11 @@
 			var $this = this;
 			var $state = this.$state;
 			var $result = this.$result;
-			var $callbacks = this.$callbacks;
 			var elem;
 
 			if ($result instanceof Error) $state = STATE_REJECTED;
 
-			while (elem = $callbacks.shift()) {
+			while (elem = this.shift()) {
 				var resolve = elem[ARGS_RESOLVE];
 				var reject = elem[ARGS_REJECT];
 				var completed = elem[$state];
@@ -222,10 +288,10 @@
 
 		// toString
 		toString: function toString() {
-			return colors.cyan('PromiseCore ') + (
+			return colors.cyan('PromiseCore { ') + (
 				this.$state === STATE_RESOLVED ? colors.green('<resolved ' + this.$result + '>'):
 				this.$state === STATE_REJECTED ? colors.red('<rejected ' + this.$result + '>'):
-				'<pending>');
+				colors.yellow('<pending>')) + colors.cyan(' }');
 		},
 
 		// toJSON
