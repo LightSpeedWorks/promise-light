@@ -129,8 +129,8 @@
 	var ARGS_RESOLVE = 2;
 	var ARGS_REJECT = 3;
 
-	function PROMISE_RESOLVE() {}
-	function PROMISE_REJECT() {}
+//	function PROMISE_RESOLVE() {}
+//	function PROMISE_REJECT() {}
 	function PROMISE_THEN() {}
 	function PROMISE_DEFER() {}
 
@@ -166,21 +166,23 @@
 			if (setup === PROMISE_DEFER) {
 				return {promise: $this, resolve:resolve, reject:reject};
 			}
-			else if (setup === PROMISE_RESOLVE) {
-				$this.$state = STATE_RESOLVED;
-				$this.$result = val;
-				nextTick2($this, $fire);
-			}
 			else if (setup === PROMISE_THEN) {
 				parent.push([val, res, resolve, reject]);
 				if (parent.$state !== STATE_UNRESOLVED)
 					nextTick2(parent, $fire);
+			}
+/*
+			else if (setup === PROMISE_RESOLVE) {
+				$this.$state = STATE_RESOLVED;
+				$this.$result = val;
+				nextTick2($this, $fire);
 			}
 			else if (setup === PROMISE_REJECT) {
 				$this.$state = STATE_REJECTED;
 				$this.$result = val;
 				nextTick2($this, $fire);
 			}
+*/
 			else if (typeof setup === 'function') {
 				setup(resolve, reject);
 			}
