@@ -146,15 +146,15 @@
 
 /*
 			var $this = function (callback) {
-				return new PromiseCore(PROMISE_THEN,
+				return new this.constructor(PROMISE_THEN,
 					function (e) { return e instanceof Error ? callback(e) : callback(Error(e)); },
 					function (v) { return v instanceof Error ? callback(v) : callback(null, v); },
 					$this);
 			};
-			if ($this.constructor !== PromiseCore) {
-				setProto($this, PromiseCore.prototype);
-				//if ($this.then !== PromiseCore.prototype.then)
-				//	Object.getOwnPropertyNames(PromiseCore.prototype).forEach(p =>
+			if ($this.constructor !== this.constructor) {
+				setProto($this, this.constructor.prototype);
+				//if ($this.then !== this.constructor.prototype.then)
+				//	Object.getOwnPropertyNames(this.constructor.prototype).forEach(p =>
 				//		Object.defineProperty($this, p, {writable: true, configurable: true, value: proto[p]}));
 			}
 */
@@ -162,6 +162,9 @@
 
 			// Queue { head, tail }
 			$this.tail = $this.head = undefined;
+			$this.$state = STATE_UNRESOLVED;
+			$this.$result = undefined;
+			$this.$handled = false;
 
 			if (setup === PROMISE_DEFER) {
 				return {promise: $this, resolve:resolve, reject:reject};
@@ -233,12 +236,12 @@
 
 		// then
 		then: function then(resolved, rejected) {
-			return new PromiseCore(PROMISE_THEN, rejected, resolved, this);
+			return new this.constructor(PROMISE_THEN, rejected, resolved, this);
 		},
 
 		// catch
 		'catch': function caught(rejected) {
-			return new PromiseCore(PROMISE_THEN, rejected, null, this);
+			return new this.constructor(PROMISE_THEN, rejected, null, this);
 		},
 
 		// fire
@@ -249,7 +252,7 @@
 
 		// toString
 		toString: function toString() {
-			return colors.cyan('PromiseCore { ') + (
+			return colors.cyan(this.constructor.name + ' { ') + (
 				this.$state === STATE_RESOLVED ? colors.green('<resolved ' + this.$result + '>'):
 				this.$state === STATE_REJECTED ? colors.red('<rejected ' + this.$result + '>'):
 				colors.yellow('<pending>')) + colors.cyan(' }');
@@ -257,7 +260,7 @@
 
 		// toJSON
 		toJSON: function toJSON() {
-			var obj = {'class': 'PromiseCore'};
+			var obj = {'class': this.constructor.name};
 			obj.state = ['pending', 'rejected', 'resolved'][this.$state + 1];
 			if (this.$state === STATE_RESOLVED) obj.value = this.$result;
 			if (this.$state === STATE_REJECTED) obj.error = '' + this.$result;
@@ -270,18 +273,18 @@
 
 		// defer
 		defer: function defer() {
-			return new PromiseCore(PROMISE_DEFER);
+			return new this(PROMISE_DEFER);
 		},
 
 		all: Promise.all,
 		race: Promise.race,
 
 		// resolve
-		//resolve: function (val) { return new PromiseCore(PROMISE_RESOLVE, val); },
+		//resolve: function (val) { return new this.constructor(PROMISE_RESOLVE, val); },
 		resolve: function (val) { return new PromiseCoreResolved(val); },
 
 		// resolve
-		//reject: function (err) { return new PromiseCore(PROMISE_REJECT, err); },
+		//reject: function (err) { return new this.constructor(PROMISE_REJECT, err); },
 		reject: function (err) { return new PromiseCoreRejected(err); },
 
 		// isPromise
