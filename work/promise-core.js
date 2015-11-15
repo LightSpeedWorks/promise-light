@@ -72,13 +72,13 @@
 		},
 		push: function push(x) {
 			if (this.tail)
-				this.tail = this.tail.next = {data:x, next:undefined};
+				this.tail = this.tail.next = {x:x, next:undefined};
 			else
-				this.tail = this.head = {data:x, next:undefined};
+				this.tail = this.head = {x:x, next:undefined};
 		},
 		shift: function shift() {
 			if (!this.head) return undefined;
-			var x = this.head.data;
+			var x = this.head.x;
 			this.head = this.head.next;
 			if (!this.head) this.tail = undefined;
 			return x;
@@ -207,14 +207,14 @@
 
 			function reject(err) {
 				if ($this.$state === STATE_RESOLVED)
-					return console.error(colors.purple(
-						'resolved promise rejected: ' +
-						$this + ': ' + err));
+					return console.error($this + '\n' + colors.purple(
+						'Resolved promise rejected: ' +
+						(err && err.stack || err)));
 
 				if ($this.$state === STATE_REJECTED)
-					return console.error(colors.purple(
-						'rejected twice: ' +
-						$this + ': ' + err));
+					return console.error($this + '\n' + colors.purple(
+						'Rejected twice: ' +
+						(err && err.stack || err)));
 
 				$this.$state = STATE_REJECTED;
 				$this.$result = err;
@@ -225,15 +225,15 @@
 		// push
 		push: function push(x) {
 			if (this.tail)
-				this.tail = this.tail.next = {data:x, next:undefined};
+				this.tail = this.tail.next = {x:x, next:undefined};
 			else
-				this.tail = this.head = {data:x, next:undefined};
+				this.tail = this.head = {x:x, next:undefined};
 		},
 
 		// shift
 		shift: function shift() {
 			if (!this.head) return undefined;
-			var x = this.head.data;
+			var x = this.head.x;
 			this.head = this.head.next;
 			if (!this.head) this.tail = undefined;
 			return x;
@@ -392,9 +392,10 @@
 						resolve(completed(val));
 					} catch (err) {
 						if ($state === STATE_REJECTED)
-							console.error(colors.purple(
-								'error in handler: ') + $this +
-								colors.purple(': ' + (val && val.stack || val)));
+							console.error($this + '\n' + colors.purple(
+								'Error in handler: ' +
+								(val && val.stack || val) + '\n' +
+								(err && err.stack || err)));
 						reject(err);
 					}
 				};
@@ -410,8 +411,12 @@
 
 	// check unhandled rejection
 	function $check() {
-		if (!this.$handled)
-			console.error(colors.purple('unhandled rejection: ' + this));
+		if (!this.$handled) {
+			var err = this.$result;
+			console.error(this + '\n' + colors.purple(
+				'Unhandled rejection: ' +
+				(err && err.stack || err)));
+		}
 	}
 
 	// check unhandled rejection
@@ -486,14 +491,15 @@
 			var resolve  = x[ARGS_RESOLVE];
 			var reject   = x[ARGS_REJECT];
 			var rejected = x[STATE_REJECTED];
+			if (rejected) this.$handled = true;
 			nextTick2(undefined, function () {
 				var err = $this.$result;
 				try {
 					resolve(rejected(err));
 				} catch (e) {
-					console.error(colors.purple(
-						'error in handler: ') + $this +
-						colors.purple(': ' + (err && err.stack || err)));
+					console.error($this + '\n' + colors.purple(
+						'Error in handler: ' + 
+						(err && err.stack || err)));
 					reject(e);
 				}
 			});
