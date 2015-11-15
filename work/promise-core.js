@@ -275,10 +275,12 @@
 		race: Promise.race,
 
 		// resolve
-		resolve: function (val) { return new PromiseCore(PROMISE_RESOLVE, val); },
+		//resolve: function (val) { return new PromiseCore(PROMISE_RESOLVE, val); },
+		resolve: function (val) { return new PromiseCoreResolved(val); },
 
 		// resolve
-		reject: function (err) { return new PromiseCore(PROMISE_REJECT, err); },
+		//reject: function (err) { return new PromiseCore(PROMISE_REJECT, err); },
+		reject: function (err) { return new PromiseCoreRejected(err); },
 
 		// isPromise
 		isPromise: isPromise
@@ -350,10 +352,86 @@
 			console.error(colors.purple('unhandled rejection: ' + this));
 	}
 
+	// check unhandled rejection
+	function $check2() {
+		nextTick2(this, $check);
+	}
+
 	// isPromise
 	function isPromise(p) {
 		return !!p && typeof p.then === 'function';
 	}
+
+	// PromiseCoreResolved
+	var PromiseCoreResolved = extend.call(PromiseCore, {
+		constructor: function PromiseCoreResolved(val) {
+			this.$state = STATE_RESOLVED;
+			this.$result = val;
+			this.$fire = undefined;
+			this.$handled = false;
+		},
+
+		// then
+		then: function then(resolved, rejected) {
+			return new PromiseCore(PROMISE_THEN, rejected, resolved, this);
+		},
+
+		// catch
+		'catch': function caught(rejected) {
+			return promiseCoreResolved;
+		},
+
+		// push
+		push: function push(x) {
+			var $this = this;
+			nextTick2(undefined, function () {
+				try {
+					x[ARGS_RESOLVE](x[STATE_RESOLVED]($this.$result));
+				} catch (e) {
+					x[ARGS_REJECT](e);
+				}
+			});
+		}
+	}); // PromiseCoreResolved
+	var promiseCoreResolved = new PromiseCoreResolved();
+
+
+	// PromiseCoreRejected
+	var PromiseCoreRejected = extend.call(PromiseCore, {
+		constructor: function PromiseCoreRejected(err) {
+			this.$state = STATE_REJECTED;
+			this.$result = err;
+			this.$fire = undefined;
+			this.$handled = false;
+			nextTick2(this, $check2);
+		},
+
+		// then
+		then: function then(resolved, rejected) {
+			return new PromiseCore(PROMISE_THEN, rejected, resolved, this);
+		},
+
+		// catch
+		'catch': function caught(rejected) {
+			return new PromiseCore(PROMISE_THEN, rejected, undefined, this);
+		},
+
+		// push
+		push: function push(x) {
+			var $this = this;
+			nextTick2(undefined, function () {
+				var err = $this.$result;
+				try {
+					x[ARGS_RESOLVE](x[STATE_REJECTED](err));
+				} catch (e) {
+					console.error(colors.purple(
+						'error in handler: ') + $this +
+						colors.purple(': ' + (err && err.stack || err)));
+					x[ARGS_REJECT](e);
+				}
+			});
+		}
+	}); // PromiseCoreRejected
 
 	if (typeof module === 'object' && module && module.exports)
 		module.exports = PromiseCore;
