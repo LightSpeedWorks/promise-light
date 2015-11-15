@@ -12,8 +12,6 @@ this.PromiseLight = function () {
 	var COLOR_ERROR  = typeof window !== 'undefined' ? '' : '\x1b[35m';
 	var COLOR_NORMAL = typeof window !== 'undefined' ? '' : '\x1b[m';
 
-	var slice = [].slice;
-
 	// defProp
 	var defProp = function (obj) {
 		if (!Object.defineProperty) return null;
