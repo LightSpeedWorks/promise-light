@@ -162,6 +162,7 @@
 
 			// Queue { head, tail }
 			$this.tail = $this.head = undefined;
+
 			$this.$state = STATE_UNRESOLVED;
 			$this.$result = undefined;
 			$this.$handled = false;
@@ -187,7 +188,11 @@
 			}
 */
 			else if (typeof setup === 'function') {
-				setup(resolve, reject);
+				try {
+					setup(resolve, reject);
+				} catch (err) {
+					resolve(err);
+				}
 			}
 
 			return $this;
@@ -319,6 +324,9 @@
 			); // return new this
 		},
 
+		// accept
+		accept: function accept(val) { return new PromiseCoreResolved(val); },
+
 		// resolve
 		//resolve: function (val) { return new this.constructor(PROMISE_RESOLVE, val); },
 		resolve: function resolve(val) { return new PromiseCoreResolved(val); },
@@ -416,7 +424,6 @@
 		constructor: function PromiseCoreResolved(val) {
 			this.$state = STATE_RESOLVED;
 			this.$result = val;
-			this.$fire = undefined;
 			this.$handled = false;
 		},
 
@@ -433,13 +440,22 @@
 		// push
 		push: function push(x) {
 			var $this = this;
-			nextTick2(undefined, function () {
-				try {
-					x[ARGS_RESOLVE](x[STATE_RESOLVED]($this.$result));
-				} catch (e) {
-					x[ARGS_REJECT](e);
-				}
-			});
+			var val = $this.$result;
+			var resolve  = x[ARGS_RESOLVE];
+			var reject   = x[ARGS_REJECT];
+			var resolved = x[STATE_RESOLVED];
+			if (val && val.then)
+				val.then(function (val) {
+						resolve(resolved(val));
+				}, reject);
+			else
+				nextTick2(undefined, function () {
+					try {
+						resolve(resolved(val));
+					} catch (e) {
+						reject(e);
+					}
+				});
 		}
 	}); // PromiseCoreResolved
 	var promiseCoreResolved = new PromiseCoreResolved();
@@ -450,7 +466,6 @@
 		constructor: function PromiseCoreRejected(err) {
 			this.$state = STATE_REJECTED;
 			this.$result = err;
-			this.$fire = undefined;
 			this.$handled = false;
 			nextTick2(this, $check2);
 		},
@@ -468,15 +483,18 @@
 		// push
 		push: function push(x) {
 			var $this = this;
+			var resolve  = x[ARGS_RESOLVE];
+			var reject   = x[ARGS_REJECT];
+			var rejected = x[STATE_REJECTED];
 			nextTick2(undefined, function () {
 				var err = $this.$result;
 				try {
-					x[ARGS_RESOLVE](x[STATE_REJECTED](err));
+					resolve(rejected(err));
 				} catch (e) {
 					console.error(colors.purple(
 						'error in handler: ') + $this +
 						colors.purple(': ' + (err && err.stack || err)));
-					x[ARGS_REJECT](e);
+					reject(e);
 				}
 			});
 		}
