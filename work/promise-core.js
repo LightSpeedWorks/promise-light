@@ -276,19 +276,68 @@
 			return new this(PROMISE_DEFER);
 		},
 
-		all: Promise.all,
-		race: Promise.race,
+		// all
+		all: function all(promises) {
+			var $thisClass = this;
+			if (isIterator(promises)) promises = makeArrayFromIterator(promises);
+			if (!(promises instanceof Array))
+				throw new TypeError('promises must be an array');
+
+			return new this(
+				function promiseAll(resolve, reject) {
+					var n = promises.length;
+					if (n === 0) return resolve([]);
+					var res = Array(n);
+					promises.forEach(function (p, i) {
+						function complete(val) {
+							res[i] = val; if (--n === 0) resolve(res); }
+						function error(err) {
+							if (n > 0) reject(err); n = 0; }
+						if (p instanceof $thisClass || isPromise(p))
+							return p.then(complete, error);
+						complete(p);
+					}); // promises.forEach
+				}
+			); // return new this
+		},
+
+		// race
+		race: function race(promises) {
+			var $thisClass = this;
+			if (isIterator(promises)) promises = makeArrayFromIterator(promises);
+			if (!(promises instanceof Array))
+				throw new TypeError('promises must be an array');
+
+			return new this(
+				function promiseRace(resolve, reject) {
+					promises.forEach(function (p) {
+						if (p instanceof $thisClass || isPromise(p))
+							return p.then(resolve, reject);
+						resolve(p);
+					}); // promises.forEach
+				}
+			); // return new this
+		},
 
 		// resolve
 		//resolve: function (val) { return new this.constructor(PROMISE_RESOLVE, val); },
-		resolve: function (val) { return new PromiseCoreResolved(val); },
+		resolve: function resolve(val) { return new PromiseCoreResolved(val); },
 
 		// resolve
 		//reject: function (err) { return new this.constructor(PROMISE_REJECT, err); },
-		reject: function (err) { return new PromiseCoreRejected(err); },
+		reject: function reject(err) { return new PromiseCoreRejected(err); },
 
-		// isPromise
-		isPromise: isPromise
+		// isPromise(p)
+		isPromise: isPromise,
+
+		// isIterator(iter)
+		isIterator: isIterator,
+
+		// isIterable(iter)
+		isIterable: isIterable,
+
+		// makeArrayFromIterator
+		makeArrayFromIterator: makeArrayFromIterator
 
 	}); // extend PromiseCore
 
@@ -362,11 +411,6 @@
 		nextTick2(this, $check);
 	}
 
-	// isPromise
-	function isPromise(p) {
-		return !!p && typeof p.then === 'function';
-	}
-
 	// PromiseCoreResolved
 	var PromiseCoreResolved = extend.call(PromiseCore, {
 		constructor: function PromiseCoreResolved(val) {
@@ -437,6 +481,40 @@
 			});
 		}
 	}); // PromiseCoreRejected
+
+	// isPromise
+	function isPromise(p) {
+		return !!p && typeof p.then === 'function';
+	}
+
+	// isIterator(iter)
+	function isIterator(iter) {
+		return !!iter && (typeof iter.next === 'function' || isIterable(iter));
+	}
+
+	// isIterable(iter)
+	function isIterable(iter) {
+		return !!iter && typeof Symbol === 'function' &&
+			!!Symbol.iterator && typeof iter[Symbol.iterator] === 'function';
+	}
+
+	// makeArrayFromIterator
+	function makeArrayFromIterator(iter) {
+		if (iter instanceof Array) return iter;
+		if (!isIterator(iter)) return [iter];
+		if (isIterable(iter)) iter = iter[Symbol.iterator]();
+		var array = [];
+		try {
+			for (;;) {
+				var val = iter.next();
+				if (val && val.hasOwnProperty('done') && val.done) return array;
+				if (val && val.hasOwnProperty('value')) val = val.value;
+				array.push(val);
+			}
+		} catch (error) {
+			return array;
+		}
+	} // makeArrayFromIterator
 
 	if (typeof module === 'object' && module && module.exports)
 		module.exports = PromiseCore;
