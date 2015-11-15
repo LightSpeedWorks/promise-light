@@ -46,48 +46,48 @@ this.PromiseLight = function () {
 
 	// Queue
 	function Queue() {
-		this.tail = this.head = null;
+		this.tail = this.head = undefined;
 	}
 	// Queue#push(x)
 	setValue(Queue.prototype, 'push', function push(x) {
 		if (this.tail)
-			this.tail = this.tail[1] = [x, null];
+			this.tail = this.tail.next = {x:x, next:undefined};
 		else
-			this.tail = this.head = [x, null];
+			this.tail = this.head = {x:x, next:undefined};
 		return this;
 	});
 	// Queue#shift()
 	setValue(Queue.prototype, 'shift', function shift() {
-		if (!this.head) return null;
-		var x = this.head[0];
-		this.head = this.head[1];
-		if (!this.head) this.tail = null;
+		if (!this.head) return undefined;
+		var x = this.head.x;
+		this.head = this.head.next;
+		if (!this.head) this.tail = undefined;
 		return x;
 	});
 
 	// nextTickDo(fn)
 	var nextTickDo = typeof setImmediate === 'function' ? setImmediate :
-		typeof process === 'object' && process && typeof process.nextTick === 'function' ? process.nextTick :
-		function nextTick(fn) { setTimeout(fn, 0); };
+		typeof process === 'object' && process &&
+		typeof process.nextTick === 'function' ? process.nextTick :
+		function nextTickDo(fn) { setTimeout(fn, 0); };
 
-	var tasks = new Queue();
-
+	var nextTickTasks = new Queue();
 	var nextTickProgress = false;
 
-	// nextTick(fn, ctx)
-	function nextTick(fn, ctx) {
+	// nextTick2(ctx, fn)
+	function nextTick2(ctx, fn) {
 		if (typeof fn !== 'function')
 			throw new TypeError('fn must be a function');
 
-		tasks.push(arguments);
+		nextTickTasks.push({ctx:ctx, fn:fn});
 		if (nextTickProgress) return;
 
 		nextTickProgress = true;
 
 		nextTickDo(function () {
 			var args;
-			while (args = tasks.shift())
-				args[0].call(args[1]);
+			while (args = nextTickTasks.shift())
+				args.fn.call(args.ctx);
 
 			nextTickProgress = false;
 		});
@@ -118,7 +118,7 @@ this.PromiseLight = function () {
 			if (setup === PROMISE_THEN) {
 				$that.$callbacks.push([val, rej, resolve, reject]);
 				if ($that.$state !== STATE_UNRESOLVED)
-					nextTick($fire, $that);
+					nextTick2($that, $fire);
 			}
 			else if (setup && typeof setup === 'function') {
 				try {
@@ -138,13 +138,13 @@ this.PromiseLight = function () {
 		// resolve(val)
 		function resolve(val) {
 			if ($this.$state === STATE_UNRESOLVED)
-				$this.$state = STATE_RESOLVED, $this.$result = val, nextTick($fire, $this);
+				$this.$state = STATE_RESOLVED, $this.$result = val, nextTick2($this, $fire);
 		}
 
 		// reject(err)
 		function reject(err) {
 			if ($this.$state === STATE_UNRESOLVED)
-				$this.$state = STATE_REJECTED, $this.$result = err, nextTick($fire, $this);
+				$this.$state = STATE_REJECTED, $this.$result = err, nextTick2($this, $fire);
 		}
 
 	} // PromiseLight
@@ -197,7 +197,7 @@ this.PromiseLight = function () {
 				}
 			})(elem);
 		} // while $callbacks.shift()
-		nextTick($checkUnhandledRejection, $this);
+		nextTick2($this, $checkUnhandledRejection);
 	} // $fire
 
 	// $checkUnhandledRejection
