@@ -491,7 +491,7 @@ this.promiseTest = function ($module, $print, assert, describe, it,
 				}
 				var keys = Object.getOwnPropertyNames(Promise).filter(f).sort().join(',');
 				assert(keys === 'accept,all,defer,race,reject,resolve' ||
-					keys === 'Promise,PromiseThunk,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,promisify,race,reject,resolve,thunkify,wrap' ||
+					keys === 'Promise,PromiseThunk,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,promisify,promisifyAll,race,reject,resolve,thunkify,thunkifyAll,wrap' ||
 					keys === 'accept,all,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve' ||
 					keys === 'Promise,PromiseLight,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve,thunkify,wrap' ||
 					keys === '_asap,_setAsap,_setScheduler,all,race,reject,resolve' || // es6-promise
