@@ -1,5 +1,6 @@
 console.log('promise-test.js 1');
 this.promiseTest = function ($module, $print, assert, describe, it,
+		PromiseCore,
 		PromiseLight, PromiseLight4, PromiseLight6, PromiseLight8) {
 	'use strict';
 
@@ -17,6 +18,7 @@ this.promiseTest = function ($module, $print, assert, describe, it,
 		'promise-light6': PromiseLight6,
 		'promise-light8': PromiseLight8,
 		'promise-light': PromiseLight,
+		'promise-core': PromiseCore,
 		'promise-thunk': PromiseThunk
 	};
 
@@ -582,6 +584,7 @@ this.promiseTest = function ($module, $print, assert, describe, it,
 		typeof assert === 'function' ? assert : require('../lib/assert'),
 		typeof describe === 'function' ? describe : require('../lib/describe-it'),
 		typeof it === 'function' ? it : require('../lib/describe-it').it,
+		typeof PromiseCore === 'function' ? PromiseCore : require('../work/promise-core'),
 		typeof PromiseLight === 'function' ? PromiseLight : require('../promise-light'),
 		typeof PromiseLight4 === 'function' ? PromiseLight4 : require('../work/promise-light4'),
 		typeof PromiseLight6 === 'function' ? PromiseLight6 : require('../work/promise-light6'),
