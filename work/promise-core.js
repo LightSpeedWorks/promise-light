@@ -138,9 +138,9 @@
 	var PromiseCore = extend.call(Object, {
 
 		// initial values into prototype (primitives only)
-		$state: STATE_UNRESOLVED,
-		$result: undefined,
-		$handled: false,
+		//$state: STATE_UNRESOLVED,
+		//$result: undefined,
+		//$handled: false,
 
 		constructor: function PromiseCore(setup, val, res, parent) {
 
@@ -160,12 +160,12 @@
 */
 			var $this = this;
 
-			// Queue { head, tail }
-			$this.tail = $this.head = undefined;
-
 			$this.$state = STATE_UNRESOLVED;
 			$this.$result = undefined;
 			$this.$handled = false;
+
+			// Queue { head, tail }
+			$this.tail = $this.head = undefined;
 
 			if (setup === PROMISE_DEFER) {
 				return {promise: $this, resolve:resolve, reject:reject};
