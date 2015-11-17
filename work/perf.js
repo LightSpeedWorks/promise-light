@@ -3,6 +3,9 @@
 
 	console.log(process.version, process.arch);
 	var BlueBird = require('bluebird');
+	try {
+		var BlueBird3 = require('bluebird305');
+	} catch (e) {}
 	var PromiseLight = require('../promise-light'); // normal object
 	Promise = PromiseLight
 	var PromiseCore = require('./promise-core'); // normal object and thunk function
@@ -25,6 +28,7 @@
 	var N = 1e3, M = 200;
 
 	function bench(Promise, nm) {
+		if (!Promise) return PromiseLight.resolve(1);
 		var start = Date.now();
 		var arr2 = [];
 		var j = 0;
@@ -69,24 +73,7 @@
 	}).then(function () {
 		return bench(BlueBird, 'bb');
 	}).then(function () {
-		process.stdout.write('\n');
-		return bench(Promise, 'p0');
-	}).then(function () {
-		return bench(PromiseLight, 'pl');
-	}).then(function () {
-		return bench(PromiseCore, 'pc');
-	}).then(function () {
-		return bench(Promise3, 'p3');
-	}).then(function () {
-		return bench(Promise4, 'p4');
-	}).then(function () {
-		return bench(Promise6, 'p6');
-	}).then(function () {
-		return bench(Promise8, 'p8');
-	}).then(function () {
-		return bench(PromiseThunk, 'pt');
-	}).then(function () {
-		return bench(BlueBird, 'bb');
+		return bench(BlueBird3, 'bb3');
 	}).then(function () {
 		process.stdout.write('\n');
 		return bench(Promise, 'p0');
@@ -107,24 +94,7 @@
 	}).then(function () {
 		return bench(BlueBird, 'bb');
 	}).then(function () {
-		process.stdout.write('\n');
-		return bench(Promise, 'p0');
-	}).then(function () {
-		return bench(PromiseLight, 'pl');
-	}).then(function () {
-		return bench(PromiseCore, 'pc');
-	}).then(function () {
-		return bench(Promise3, 'p3');
-	}).then(function () {
-		return bench(Promise4, 'p4');
-	}).then(function () {
-		return bench(Promise6, 'p6');
-	}).then(function () {
-		return bench(Promise8, 'p8');
-	}).then(function () {
-		return bench(PromiseThunk, 'pt');
-	}).then(function () {
-		return bench(BlueBird, 'bb');
+		return bench(BlueBird3, 'bb3');
 	}).then(function () {
 		process.stdout.write('\n');
 		return bench(Promise, 'p0');
@@ -144,6 +114,50 @@
 		return bench(PromiseThunk, 'pt');
 	}).then(function () {
 		return bench(BlueBird, 'bb');
+	}).then(function () {
+		return bench(BlueBird3, 'bb3');
+	}).then(function () {
+		process.stdout.write('\n');
+		return bench(Promise, 'p0');
+	}).then(function () {
+		return bench(PromiseLight, 'pl');
+	}).then(function () {
+		return bench(PromiseCore, 'pc');
+	}).then(function () {
+		return bench(Promise3, 'p3');
+	}).then(function () {
+		return bench(Promise4, 'p4');
+	}).then(function () {
+		return bench(Promise6, 'p6');
+	}).then(function () {
+		return bench(Promise8, 'p8');
+	}).then(function () {
+		return bench(PromiseThunk, 'pt');
+	}).then(function () {
+		return bench(BlueBird, 'bb');
+	}).then(function () {
+		return bench(BlueBird3, 'bb3');
+	}).then(function () {
+		process.stdout.write('\n');
+		return bench(Promise, 'p0');
+	}).then(function () {
+		return bench(PromiseLight, 'pl');
+	}).then(function () {
+		return bench(PromiseCore, 'pc');
+	}).then(function () {
+		return bench(Promise3, 'p3');
+	}).then(function () {
+		return bench(Promise4, 'p4');
+	}).then(function () {
+		return bench(Promise6, 'p6');
+	}).then(function () {
+		return bench(Promise8, 'p8');
+	}).then(function () {
+		return bench(PromiseThunk, 'pt');
+	}).then(function () {
+		return bench(BlueBird, 'bb');
+	}).then(function () {
+		return bench(BlueBird3, 'bb3');
 	}).then(function () {
 		process.stdout.write('\n');
 	});

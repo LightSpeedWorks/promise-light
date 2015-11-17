@@ -1,0 +1,21 @@
+{
+  "name": "bb",
+  "version": "0.0.0",
+  "description": "bb",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "repo"
+  },
+  "keywords": [
+    "bb"
+  ],
+  "author": "LightSpeedC",
+  "license": "MIT",
+  "dependencies": {
+    "bluebird": "^3.0.5"
+  }
+}
