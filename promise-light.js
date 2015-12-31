@@ -119,11 +119,8 @@ this.PromiseLight = function () {
 					nextTick2($that, $fire);
 			}
 			else if (setup && typeof setup === 'function') {
-				try {
-					setup.call(this, resolve, reject);
-				} catch (err) {
-					reject(err);
-				}
+				try { setup.call(this, resolve, reject); }
+				catch (err) { reject(err); }
 			}
 			else {
 				// no setup, public promise
