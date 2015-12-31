@@ -188,11 +188,8 @@
 			}
 */
 			else if (typeof setup === 'function') {
-				try {
-					setup(resolve, reject);
-				} catch (err) {
-					resolve(err);
-				}
+				try { setup(resolve, reject); }
+				catch (err) { resolve(err); }
 			}
 
 			return $this;
@@ -228,6 +225,7 @@
 				this.tail = this.tail.next = {x:x, next:undefined};
 			else
 				this.tail = this.head = {x:x, next:undefined};
+			return this;
 		},
 
 		// shift
