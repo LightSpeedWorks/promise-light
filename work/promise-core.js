@@ -39,9 +39,10 @@
 		Object.setPrototypeOf : function (obj, proto) { obj.__proto__ = proto; };
 
 	// nextTickDo(fn)
-	var nextTickDo = typeof setImmediate === 'function' ? setImmediate :
+	var nextTickDo = 
 		typeof process !== 'undefined' && process &&
 		typeof process.nextTick === 'function' ? process.nextTick :
+		typeof setImmediate === 'function' ? setImmediate :
 		function nextTickDo(fn) { setTimeout(fn, 0); };
 
 	// base-class-extend
