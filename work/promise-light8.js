@@ -66,8 +66,10 @@ this.PromiseLight = function () {
 	});
 
 	// nextTickDo(fn)
-	var nextTickDo = typeof setImmediate === 'function' ? setImmediate :
-		typeof process === 'object' && process && typeof process.nextTick === 'function' ? process.nextTick :
+	var nextTickDo =
+		typeof process === 'object' && process &&
+		typeof process.nextTick === 'function' ? process.nextTick :
+		typeof setImmediate === 'function' ? setImmediate :
 		function nextTick(fn) { setTimeout(fn, 0); };
 
 	var tasks = new Queue();
