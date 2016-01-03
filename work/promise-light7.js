@@ -81,12 +81,11 @@ this.PromiseLight = function () {
 			//	      console.log('resolved after rejected:', val, this.args[0]) :
 			//	err ? console.log('rejected after resolved:', err, this.args[1]) :
 			//	      console.log('resolved twice:', val, this.args[1]);
-			this.args = arguments;
+			this.args = [err, val]; //arguments;
 			this.pos < this.len && nextExec(this, this.$$fire);
 		}, // reject
 
 		// PromiseLight#$$fire
-		//PromiseLight.prototype.$$fire = function $$fire() {
 		$$fire: function $$fire() {
 			for (; this.pos < this.len; ++this.pos) {
 				var cb = this[this.pos], next = cb.next_cb;
@@ -105,7 +104,6 @@ this.PromiseLight = function () {
 		}, // fire
 
 		// PromiseLight#toString
-		//PromiseLight.prototype.toString = function toString() {
 		toString: function toString() {
 			return 'PromLit { ' + JSON.stringify(this.args) + ' }';
 		} // toString
@@ -113,7 +111,6 @@ this.PromiseLight = function () {
 
 	{ // statics
 		// PromiseLight.defer
-		//PromiseLight.defer = function defer() {
 		defer: function defer() {
 			var resolve, reject;
 			var p = new PromiseLight(function (res, rej) { resolve = res; reject = rej; });
@@ -122,7 +119,7 @@ this.PromiseLight = function () {
 
 		isPromise: isPromise,
 
-		//PromiseLight.all = function all(promises) {
+		// PromiseLight.all
 		all: function all(promises) {
 			//if (isIterator(promises)) promises = makeArrayFromIterator(promises);
 			if (!(promises instanceof Array))
@@ -143,12 +140,12 @@ this.PromiseLight = function () {
 			); // return new Promise
 		}, // all
 
-		//PromiseLight.resolve = function resolve(val) {
+		//PromiseLight.resolve
 		resolve: function resolve(val) {
 			return new PromiseLightSolved([null, val]);
 			//return new PromiseLight(function (res, rej) { res(val); });
 		},
-		//PromiseLight.reject = function reject(err) {
+		//PromiseLight.reject
 		reject: function reject(err) {
 			return new PromiseLightSolved([err]);
 			//return new PromiseLight(function (res, rej) { rej(err); });
