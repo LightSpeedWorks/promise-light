@@ -21,6 +21,7 @@ this.PromiseLight = function () {
 
 			this.pos = this.len = 0;
 			//Queue.call(this);
+			this.que = [];
 			this.args = null;
 
 			var that = this;
@@ -37,7 +38,7 @@ this.PromiseLight = function () {
 		// PromiseLight#then
 		//PromiseLight.prototype.then = function then(resolve, reject) {
 		then: function then(resolve, reject) {
-			this[this.len++] = cb;
+			this.que[this.len++] = cb;
 			var p = new PromiseLightNext(cb); //(function (resolve, reject) { cb.next_cb = reject; });
 			this.args && nextExec(this, this.$$fire);
 			return p;
@@ -50,9 +51,9 @@ this.PromiseLight = function () {
 		// PromiseLight#catch
 		//PromiseLight.prototype['catch'] = function caught(reject) {
 		'catch': function caught(reject) {
-			this[this.len++] = cb;
+			this.que[this.len++] = cb;
 			var p = new PromiseLightNext(cb); //(function (resolve, reject) { cb.next_cb = reject; });
-			this.args && nextExec(this, $$fire);
+			this.args && nextExec(this, this.$$fire);
 			return p;
 
 			function cb(err, val) {
@@ -88,7 +89,7 @@ this.PromiseLight = function () {
 		// PromiseLight#$$fire
 		$$fire: function $$fire() {
 			for (; this.pos < this.len; ++this.pos) {
-				var cb = this[this.pos], next = cb.next_cb;
+				var cb = this.que[this.pos], next = cb.next_cb;
 				(function (args, cb, next) {
 					try {
 						//var r = cb.apply(null, args);
@@ -99,7 +100,7 @@ this.PromiseLight = function () {
 						else next(null, r);
 					} catch (e) { next(e); }
 				})(this.args, cb, next);
-				this[this.pos] = undefined;
+				this.que[this.pos] = undefined;
 			}
 		}, // fire
 
@@ -159,6 +160,7 @@ this.PromiseLight = function () {
 	var PromiseLightSolved = PromiseLight.extend({
 		constructor: function PromiseLightSolved(args) {
 			this.pos = this.len = 0;
+			this.que = [];
 			this.args = args;
 			return;
 		} // PromiseLightSolved
@@ -167,6 +169,7 @@ this.PromiseLight = function () {
 	var PromiseLightNext = PromiseLight.extend({
 		constructor: function PromiseLightNext(cb) {
 			this.pos = this.len = 0;
+			this.que = [];
 			this.args = null;
 			cb.next_cb = reject;
 			var that = this;
