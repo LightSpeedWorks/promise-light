@@ -19,6 +19,9 @@ void function () {
 		if (!this.head) this.tail = undefined;
 		return x;
 	};
+	Queue.prototype.clear = function clear() {
+		this.tail = this.head = undefined;
+	};
 
 	if (typeof module === 'object' && module && module.exports)
 		module.exports = Queue;

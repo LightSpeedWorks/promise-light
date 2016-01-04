@@ -15,6 +15,7 @@ void function () {
 			var x = this.que[this.pos];
 			this.que[this.pos] = undefined;
 			this.pos++;
+			//if (this.pos === this.len) this.clear();
 			return x;
 		}
 	};
