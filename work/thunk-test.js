@@ -8,7 +8,7 @@ void function () {
 	var nextTick = require('./next-tick');
 	var Thunk1 = require('./thunk1');
 	var Thunk = require('./thunk');
-	var PromiseLight = require('./promise-light7');
+	var PromiseLight = require('./promise-light9');
 	var PromiseThunk = require('./promise-thunk9');
 
 
