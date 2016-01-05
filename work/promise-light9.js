@@ -20,13 +20,12 @@ this.PromiseLight = function () {
 			//	throw new Error('new PromiseLight!!!');
 
 			this.pos = this.len = 0;
-			//Queue.call(this);
 			this.que = [];
 			this.args = null;
 
 			var that = this;
 			try{ setup(resolve, reject); }
-			catch (err) { this.$$reject(err); }
+			catch (err) { reject(err); }
 
 			return;
 
@@ -35,46 +34,45 @@ this.PromiseLight = function () {
 
 		}, // PromiseLight
 
-		// PromiseLight#then
-		//PromiseLight.prototype.then = function then(resolve, reject) {
-		then: function then(resolve, reject) {
-			this.que[this.len++] = cb;
-			var p = new PromiseLightNext(cb); //(function (resolve, reject) { cb.next_cb = reject; });
+		// PromiseLight#$$thunk
+		$$thunk: function $$thunk(cb) {
+			var elem = [undefined, undefined, cb, undefined];
+			this.que[this.len++] = elem;
+			var p = new PromiseLightNext(elem);
 			this.args && nextExec(this, this.$$fire);
 			return p;
+		}, // $$thunk
 
-			function cb(err, val) {
-				return err ? reject ? reject(err) : err : resolve ? resolve(val) : undefined;
-			}
+		// PromiseLight#then
+		then: function then(resolve, reject) {
+			var elem = [reject, resolve, undefined, undefined];
+			this.que[this.len++] = elem;
+			var p = new PromiseLightNext(elem);
+			this.args && nextExec(this, this.$$fire);
+			return p;
 		}, // then
 
 		// PromiseLight#catch
-		//PromiseLight.prototype['catch'] = function caught(reject) {
 		'catch': function caught(reject) {
-			this.que[this.len++] = cb;
-			var p = new PromiseLightNext(cb); //(function (resolve, reject) { cb.next_cb = reject; });
+			var elem = [reject, undefined, undefined, undefined];
+			this.que[this.len++] = elem;
+			var p = new PromiseLightNext(elem);
 			this.args && nextExec(this, this.$$fire);
 			return p;
-
-			function cb(err, val) {
-				return err ? reject ? reject(err) : err : undefined;
-			}
 		}, // catch
 
 		// PromiseLight#$$resolve
-		//PromiseLight.prototype.$$resolve = function $$resolve(val) {
 		$$resolve: function $$resolve(val) {
 			//var that = this;
 			//if (this.args) return this.args[0] ?
 			//	console.log('resolved after rejected:', val, this.args[0]) :
 			//	console.log('resolved twice:', val, this.args[1]);
 			//this.args = [null, arguments.length < 2 ? val : slice.call(arguments)];
-			this.args = [null, val];
+			this.args = [null, val, undefined, undefined];
 			this.pos < this.len && nextExec(this, this.$$fire);
 		}, // resolve
 
 		// PromiseLight#$$reject
-		//PromiseLight.prototype.$$reject = function $$reject(err, val) {
 		$$reject: function $$reject(err, val) {
 			//var that = this;
 			//if (this.args) return this.args[0] ?
@@ -89,17 +87,21 @@ this.PromiseLight = function () {
 		// PromiseLight#$$fire
 		$$fire: function $$fire() {
 			for (; this.pos < this.len; ++this.pos) {
-				var cb = this.que[this.pos], next = cb.next_cb;
-				(function (args, cb, next) {
+				var elem = this.que[this.pos];
+				(function (args, rej, res, cb, nxcb) {
 					try {
-						//var r = cb.apply(null, args);
-						var r = cb(args[0], args[1]);
-						if (r && r.then) r.then(function (v) { next(null, v); }, next);
-						else if (typeof r === 'function') r(next);
-						else if (r instanceof Error) next(r);
-						else next(null, r);
-					} catch (e) { next(e); }
-				})(this.args, cb, next);
+						var r = cb ? cb(args[0], args[1]) :
+							args[0] && rej ? rej(args[0]) :
+							args[0] ? args[0] :
+							res ? res(args[1]) :
+							undefined;
+						if (r && r.then)
+							r.then(function (v) { return nxcb(null, v); }, nxcb);
+						else if (typeof r === 'function') r(nxcb);
+						else if (r instanceof Error) nxcb(r);
+						else nxcb(null, r);
+					} catch (e) { nxcb(e); }
+				})(this.args, elem[0], elem[1], elem[2], elem[3]);
 				this.que[this.pos] = undefined;
 			}
 		}, // fire
@@ -113,9 +115,10 @@ this.PromiseLight = function () {
 	{ // statics
 		// PromiseLight.defer
 		defer: function defer() {
-			var resolve, reject;
-			var p = new PromiseLight(function (res, rej) { resolve = res; reject = rej; });
-			return {promise: p, resolve: resolve, reject: reject};
+			return new PromiseLightDefer();
+			//var resolve, reject;
+			//var p = new PromiseLight(function (res, rej) { resolve = res; reject = rej; });
+			//return {promise: p, resolve: resolve, reject: reject};
 		}, // defer
 
 		isPromise: isPromise,
@@ -144,12 +147,10 @@ this.PromiseLight = function () {
 		//PromiseLight.resolve
 		resolve: function resolve(val) {
 			return new PromiseLightSolved([null, val]);
-			//return new PromiseLight(function (res, rej) { res(val); });
 		},
 		//PromiseLight.reject
 		reject: function reject(err) {
 			return new PromiseLightSolved([err]);
-			//return new PromiseLight(function (res, rej) { rej(err); });
 		}
 	}); // PromiseLight
 
@@ -167,17 +168,32 @@ this.PromiseLight = function () {
 	});
 
 	var PromiseLightNext = PromiseLight.extend({
-		constructor: function PromiseLightNext(cb) {
+		constructor: function PromiseLightNext(elem) {
 			this.pos = this.len = 0;
 			this.que = [];
 			this.args = null;
-			cb.next_cb = reject;
+			elem[3] = nxcb;
 			var that = this;
 			return;
 
-			function reject(err, val)  { return that.$$reject(err, val); }
+			function nxcb(err, val)  { return that.$$reject(err, val); }
 		} // PromiseLightNext
 	});
+
+	var PromiseLightDefer = PromiseLight.extend({
+		constructor: function PromiseLightDefer() {
+			this.pos = this.len = 0;
+			this.que = [];
+			this.args = null;
+			var that = this;
+			return {promise: this, resolve: resolve, reject: reject};
+
+			function resolve(val)     { return that.$$resolve(val); }
+			function reject(err, val) { return that.$$reject(err, val); }
+
+		} // PromiseLightDefer
+	});
+
 
 //	function log(x) { console.log('***', x); }
 
