@@ -23,14 +23,14 @@ this.PromiseLight = function () {
 			this.que = [];
 			this.args = null;
 
-			var that = this;
+			var thunk = this;
 			try{ setup(resolve, reject); }
 			catch (err) { reject(err); }
 
 			return;
 
-			function resolve(val)     { return that.$$resolve(val); }
-			function reject(err, val) { return that.$$reject(err, val); }
+			function resolve(val)     { return thunk.$$resolve(val); }
+			function reject(err, val) { return thunk.$$reject(err, val); }
 
 		}, // PromiseLight
 
@@ -63,7 +63,7 @@ this.PromiseLight = function () {
 
 		// PromiseLight#$$resolve
 		$$resolve: function $$resolve(val) {
-			//var that = this;
+			//var thunk = this;
 			//if (this.args) return this.args[0] ?
 			//	console.log('resolved after rejected:', val, this.args[0]) :
 			//	console.log('resolved twice:', val, this.args[1]);
@@ -74,7 +74,7 @@ this.PromiseLight = function () {
 
 		// PromiseLight#$$reject
 		$$reject: function $$reject(err, val) {
-			//var that = this;
+			//var thunk = this;
 			//if (this.args) return this.args[0] ?
 			//	err ? console.log('rejected twice:', err, this.args[0]) :
 			//	      console.log('resolved after rejected:', val, this.args[0]) :
@@ -116,9 +116,6 @@ this.PromiseLight = function () {
 		// PromiseLight.defer
 		defer: function defer() {
 			return new PromiseLightDefer();
-			//var resolve, reject;
-			//var p = new PromiseLight(function (res, rej) { resolve = res; reject = rej; });
-			//return {promise: p, resolve: resolve, reject: reject};
 		}, // defer
 
 		isPromise: isPromise,
@@ -173,10 +170,10 @@ this.PromiseLight = function () {
 			this.que = [];
 			this.args = null;
 			elem[3] = nxcb;
-			var that = this;
+			var thunk = this;
 			return;
 
-			function nxcb(err, val)  { return that.$$reject(err, val); }
+			function nxcb(err, val)  { return thunk.$$reject(err, val); }
 		} // PromiseLightNext
 	});
 
@@ -185,12 +182,11 @@ this.PromiseLight = function () {
 			this.pos = this.len = 0;
 			this.que = [];
 			this.args = null;
-			var that = this;
+			var thunk = this;
 			return {promise: this, resolve: resolve, reject: reject};
 
-			function resolve(val)     { return that.$$resolve(val); }
-			function reject(err, val) { return that.$$reject(err, val); }
-
+			function resolve(val)     { return thunk.$$resolve(val); }
+			function reject(err, val) { return thunk.$$reject(err, val); }
 		} // PromiseLightDefer
 	});
 
