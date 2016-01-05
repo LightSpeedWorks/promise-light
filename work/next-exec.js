@@ -9,13 +9,13 @@ void function () {
 		typeof setImmediate === 'function' ? setImmediate :
 		function nextTickDo(fn) { setTimeout(fn, 0); };
 
-	var Queue = require('./enq');
+	var Queue = require('./enq3');
 	var tasks = new Queue();
 	var nextExecProgress = false;
 
 	// nextExec(ctx, fn)
 	function nextExec(ctx, fn) {
-		tasks.push({ctx:ctx, fn:fn});
+		tasks.push({ctx:ctx, fn:fn, next_obj:undefined});
 		//tasks.push(arguments);
 
 		if (nextExecProgress) return;
@@ -28,7 +28,7 @@ void function () {
 				task.fn.call(task.ctx);
 				//task[1].call(task[0]);
 
-			//tasks.clear();
+			tasks.clear();
 			nextExecProgress = false;
 		});
 	}
