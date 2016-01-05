@@ -19,11 +19,11 @@ this.PromiseLight = function () {
 			//if (!(this instanceof PromiseLight))
 			//	throw new Error('new PromiseLight!!!');
 
-			this.pos = this.len = 0;
-			this.que = [];
-			this.args = null;
-
 			var thunk = this;
+			thunk.pos = thunk.len = 0;
+			thunk.que = [];
+			thunk.args = null;
+
 			try{ setup(resolve, reject); }
 			catch (err) { reject(err); }
 
@@ -157,20 +157,21 @@ this.PromiseLight = function () {
 
 	var PromiseLightSolved = PromiseLight.extend({
 		constructor: function PromiseLightSolved(args) {
-			this.pos = this.len = 0;
-			this.que = [];
-			this.args = args;
+			var thunk = this;
+			thunk.pos = thunk.len = 0;
+			thunk.que = [];
+			thunk.args = args;
 			return;
 		} // PromiseLightSolved
 	});
 
 	var PromiseLightNext = PromiseLight.extend({
 		constructor: function PromiseLightNext(elem) {
-			this.pos = this.len = 0;
-			this.que = [];
-			this.args = null;
-			elem[3] = nxcb;
 			var thunk = this;
+			thunk.pos = thunk.len = 0;
+			thunk.que = [];
+			thunk.args = null;
+			elem[3] = nxcb;
 			return;
 
 			function nxcb(err, val)  { return thunk.$$reject(err, val); }
@@ -179,11 +180,11 @@ this.PromiseLight = function () {
 
 	var PromiseLightDefer = PromiseLight.extend({
 		constructor: function PromiseLightDefer() {
-			this.pos = this.len = 0;
-			this.que = [];
-			this.args = null;
 			var thunk = this;
-			return {promise: this, resolve: resolve, reject: reject};
+			thunk.pos = thunk.len = 0;
+			thunk.que = [];
+			thunk.args = null;
+			return {promise: thunk, resolve: resolve, reject: reject};
 
 			function resolve(val)     { return thunk.$$resolve(val); }
 			function reject(err, val) { return thunk.$$reject(err, val); }

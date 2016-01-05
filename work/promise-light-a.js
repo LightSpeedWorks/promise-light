@@ -23,7 +23,6 @@ this.PromiseLight = function () {
 			thunk.que = [];
 			thunk.args = null;
 
-			//var thunk = this;
 			try{ setup(resolve, reject); }
 			catch (err) { reject(err); }
 
@@ -159,34 +158,42 @@ this.PromiseLight = function () {
 
 	var PromiseLightSolved = PromiseLight.extend({
 		constructor: function PromiseLightSolved(args) {
-			this.pos = this.len = 0;
-			this.que = [];
-			this.args = args;
-			return;
+			thunk.pos = thunk.len = 0;
+			thunk.que = [];
+			thunk.args = args;
+
+			Object.setPrototypeOf(thunk, PromiseLight.prototype);
+			return thunk;
+
+			function thunk(cb)        { return thunk.$$thunk(cb); }
 		} // PromiseLightSolved
 	});
 
 	var PromiseLightNext = PromiseLight.extend({
 		constructor: function PromiseLightNext(elem) {
-			this.pos = this.len = 0;
-			this.que = [];
-			this.args = null;
+			thunk.pos = thunk.len = 0;
+			thunk.que = [];
+			thunk.args = null;
 			elem[3] = nxcb;
-			var thunk = this;
-			return;
 
-			function nxcb(err, val)  { return thunk.$$reject(err, val); }
+			Object.setPrototypeOf(thunk, PromiseLight.prototype);
+			return thunk;
+
+			function thunk(cb)        { return thunk.$$thunk(cb); }
+			function nxcb(err, val)   { return thunk.$$reject(err, val); }
 		} // PromiseLightNext
 	});
 
 	var PromiseLightDefer = PromiseLight.extend({
 		constructor: function PromiseLightDefer() {
-			this.pos = this.len = 0;
-			this.que = [];
-			this.args = null;
-			var thunk = this;
-			return {promise: this, resolve: resolve, reject: reject};
+			thunk.pos = thunk.len = 0;
+			thunk.que = [];
+			thunk.args = null;
 
+			Object.setPrototypeOf(thunk, PromiseLight.prototype);
+			return {promise: thunk, resolve: resolve, reject: reject};
+
+			function thunk(cb)        { return thunk.$$thunk(cb); }
 			function resolve(val)     { return thunk.$$resolve(val); }
 			function reject(err, val) { return thunk.$$reject(err, val); }
 		} // PromiseLightDefer
