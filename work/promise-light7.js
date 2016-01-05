@@ -20,7 +20,6 @@ this.PromiseLight = function () {
 			//	throw new Error('new PromiseLight!!!');
 
 			this.pos = this.len = 0;
-			//Queue.call(this);
 			this.que = [];
 			this.args = null;
 
@@ -36,7 +35,6 @@ this.PromiseLight = function () {
 		}, // PromiseLight
 
 		// PromiseLight#then
-		//PromiseLight.prototype.then = function then(resolve, reject) {
 		then: function then(resolve, reject) {
 			this.que[this.len++] = cb;
 			var p = new PromiseLightNext(cb); //(function (resolve, reject) { cb.next_cb = reject; });
@@ -49,7 +47,6 @@ this.PromiseLight = function () {
 		}, // then
 
 		// PromiseLight#catch
-		//PromiseLight.prototype['catch'] = function caught(reject) {
 		'catch': function caught(reject) {
 			this.que[this.len++] = cb;
 			var p = new PromiseLightNext(cb); //(function (resolve, reject) { cb.next_cb = reject; });
@@ -62,7 +59,6 @@ this.PromiseLight = function () {
 		}, // catch
 
 		// PromiseLight#$$resolve
-		//PromiseLight.prototype.$$resolve = function $$resolve(val) {
 		$$resolve: function $$resolve(val) {
 			//var that = this;
 			//if (this.args) return this.args[0] ?
@@ -74,7 +70,6 @@ this.PromiseLight = function () {
 		}, // resolve
 
 		// PromiseLight#$$reject
-		//PromiseLight.prototype.$$reject = function $$reject(err, val) {
 		$$reject: function $$reject(err, val) {
 			//var that = this;
 			//if (this.args) return this.args[0] ?
@@ -144,12 +139,10 @@ this.PromiseLight = function () {
 		//PromiseLight.resolve
 		resolve: function resolve(val) {
 			return new PromiseLightSolved([null, val]);
-			//return new PromiseLight(function (res, rej) { res(val); });
 		},
 		//PromiseLight.reject
 		reject: function reject(err) {
 			return new PromiseLightSolved([err]);
-			//return new PromiseLight(function (res, rej) { rej(err); });
 		}
 	}); // PromiseLight
 
