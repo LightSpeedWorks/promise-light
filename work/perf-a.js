@@ -10,7 +10,7 @@
 	Promise = PromiseLight
 	var PromiseCore = require('./promise-core');	// normal object and thunk function
 	var Promise2 = require('./promise-light2');	// normal object
-	var Promise3 = require('./promise-light3');	// closure
+	var PromiseB = require('./promise-light-b');	// normal object + closure
 	var Promise4 = require('./promise-light4');	// normal object
 	var PromiseA = require('./promise-light-a');	// normal object
 	var Promise9 = require('./promise-light9');	// normal object + closure
@@ -68,7 +68,7 @@
 	}).then(function () {
 		return bench(PromiseCore, 'pc');
 	}).then(function () {
-		return bench(Promise3, 'p3');
+		return bench(PromiseB, 'pb');
 	}).then(function () {
 		return bench(Promise4, 'p4');
 	}).then(function () {
@@ -91,7 +91,7 @@
 	}).then(function () {
 		return bench(PromiseCore, 'pc');
 	}).then(function () {
-		return bench(Promise3, 'p3');
+		return bench(PromiseB, 'pb');
 	}).then(function () {
 		return bench(Promise4, 'p4');
 	}).then(function () {
@@ -114,7 +114,7 @@
 	}).then(function () {
 		return bench(PromiseCore, 'pc');
 	}).then(function () {
-		return bench(Promise3, 'p3');
+		return bench(PromiseB, 'pb');
 	}).then(function () {
 		return bench(Promise4, 'p4');
 	}).then(function () {
@@ -137,7 +137,7 @@
 	}).then(function () {
 		return bench(PromiseCore, 'pc');
 	}).then(function () {
-		return bench(Promise3, 'p3');
+		return bench(PromiseB, 'pb');
 	}).then(function () {
 		return bench(Promise4, 'p4');
 	}).then(function () {
@@ -160,7 +160,7 @@
 	}).then(function () {
 		return bench(PromiseCore, 'pc');
 	}).then(function () {
-		return bench(Promise3, 'p3');
+		return bench(PromiseB, 'pb');
 	}).then(function () {
 		return bench(Promise4, 'p4');
 	}).then(function () {
