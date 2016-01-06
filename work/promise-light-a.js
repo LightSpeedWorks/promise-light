@@ -89,20 +89,7 @@ this.PromiseLight = function () {
 		$$fire: function $$fire() {
 			for (; this.pos < this.len; ++this.pos) {
 				var elem = this.que[this.pos];
-				(function (args, rej, res, cb, nxcb) {
-					try {
-						var r = cb ? cb(args[0], args[1]) :
-							args[0] && rej ? rej(args[0]) :
-							args[0] ? args[0] :
-							res ? res(args[1]) :
-							undefined;
-						if (r && r.then)
-							r.then(function (v) { return nxcb(null, v); }, nxcb);
-						else if (typeof r === 'function') r(nxcb);
-						else if (r instanceof Error) nxcb(r);
-						else nxcb(null, r);
-					} catch (e) { nxcb(e); }
-				})(this.args, elem[0], elem[1], elem[2], elem[3]);
+				fire(this.args[0], this.args[1], elem[0], elem[1], elem[2], elem[3]);
 				this.que[this.pos] = undefined;
 			}
 		}, // fire
@@ -151,6 +138,20 @@ this.PromiseLight = function () {
 			return new PromiseLightSolved([err]);
 		}
 	}); // PromiseLight
+
+	function fire(err, val, rej, res, cb, nxcb) {
+		try {
+			var r = cb ? cb(err, val) :
+				err ? (rej ? rej(err) : err) :
+				res ? res(val) :
+				undefined;
+			if (r && r.then)
+				r.then(function (v) { return nxcb(null, v); }, nxcb);
+			else if (typeof r === 'function') r(nxcb);
+			else if (r instanceof Error) nxcb(r);
+			else nxcb(null, r);
+		} catch (e) { nxcb(e); }
+	} // fire
 
 	function isPromise(p) {
 		return p instanceof PromiseLight || p instanceof Promise || (!!p && p.then);
