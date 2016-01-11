@@ -156,41 +156,38 @@ this.PromiseLight = function () {
 		return p instanceof PromiseLight || p instanceof Promise || (!!p && p.then);
 	}
 
-	var PromiseLightSolved = PromiseLight.extend({
-		constructor: function PromiseLightSolved(args) {
-			var thunk = this;
-			thunk.pos = thunk.len = 0;
-			thunk.que = [];
-			thunk.args = args;
-			return;
-		} // PromiseLightSolved
-	});
+	function PromiseLightSolved(args) {
+		var thunk = this;
+		thunk.pos = thunk.len = 0;
+		thunk.que = [];
+		thunk.args = args;
+		return;
+	} // PromiseLightSolved
+	PromiseLightSolved.prototype = PromiseLight.prototype;
 
-	var PromiseLightNext = PromiseLight.extend({
-		constructor: function PromiseLightNext(elem) {
-			var thunk = this;
-			thunk.pos = thunk.len = 0;
-			thunk.que = [];
-			thunk.args = null;
-			elem[3] = nxcb;
-			return;
+	function PromiseLightNext(elem) {
+		var thunk = this;
+		thunk.pos = thunk.len = 0;
+		thunk.que = [];
+		thunk.args = null;
+		elem[3] = nxcb;
+		return;
 
-			function nxcb(err, val)  { return thunk.$$reject(err, val); }
-		} // PromiseLightNext
-	});
+		function nxcb(err, val)  { return thunk.$$reject(err, val); }
+	} // PromiseLightNext
+	PromiseLightNext.prototype = PromiseLight.prototype;
 
-	var PromiseLightDefer = PromiseLight.extend({
-		constructor: function PromiseLightDefer() {
-			var thunk = this;
-			thunk.pos = thunk.len = 0;
-			thunk.que = [];
-			thunk.args = null;
-			return {promise: thunk, resolve: resolve, reject: reject};
+	function PromiseLightDefer() {
+		var thunk = this;
+		thunk.pos = thunk.len = 0;
+		thunk.que = [];
+		thunk.args = null;
+		return {promise: thunk, resolve: resolve, reject: reject};
 
-			function resolve(val)     { return thunk.$$resolve(val); }
-			function reject(err, val) { return thunk.$$reject(err, val); }
-		} // PromiseLightDefer
-	});
+		function resolve(val)     { return thunk.$$resolve(val); }
+		function reject(err, val) { return thunk.$$reject(err, val); }
+	} // PromiseLightDefer
+	PromiseLightDefer.prototype = PromiseLight.prototype;
 
 
 //	function log(x) { console.log('***', x); }
