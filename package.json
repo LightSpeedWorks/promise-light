@@ -9,8 +9,7 @@
     "es6-promise": ">=3.0.2",
     "light-promise": ">=0.0.3",
     "mocha": "^2.3.4",
-    "promise-thunk": "^0.1.11",
-    "socket.io": "^1.4.0"
+    "promise-thunk": "^0.1.11"
   },
   "keywords": [
     "promise"
