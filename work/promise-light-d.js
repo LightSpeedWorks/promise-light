@@ -7,7 +7,7 @@ this.PromiseLight = function () {
 
 	var extend = require('./extend-light');
 	//var setValue = require('./set-value');
-	//var Queue = require('./enq');
+	var Queue = require('./enq3');
 	//Queue.extend = extend;
 
 	var nextExec = require('./next-exec');
@@ -20,8 +20,7 @@ this.PromiseLight = function () {
 			//	throw new Error('new PromiseLight!!!');
 
 			var thunk = this;
-			thunk.pos = thunk.len = 0;
-			thunk.que = [];
+			thunk.que = new Queue;
 			thunk.args = null;
 
 			try{ setup(resolve, reject); }
@@ -36,27 +35,21 @@ this.PromiseLight = function () {
 
 		// PromiseLight#$$thunk
 		$$thunk: function $$thunk(cb) {
-			var elem = [undefined, undefined, cb, undefined];
-			this.que[this.len++] = elem;
-			var p = new PromiseLightNext(elem);
+			var p = new PromiseLightNext(this, undefined, undefined, cb);
 			this.args && nextExec(this, this.$$fire);
 			return p;
 		}, // $$thunk
 
 		// PromiseLight#then
 		then: function then(resolve, reject) {
-			var elem = [reject, resolve, undefined, undefined];
-			this.que[this.len++] = elem;
-			var p = new PromiseLightNext(elem);
+			var p = new PromiseLightNext(this, reject, resolve, undefined);
 			this.args && nextExec(this, this.$$fire);
 			return p;
 		}, // then
 
 		// PromiseLight#catch
 		'catch': function caught(reject) {
-			var elem = [reject, undefined, undefined, undefined];
-			this.que[this.len++] = elem;
-			var p = new PromiseLightNext(elem);
+			var p = new PromiseLightNext(this, reject, undefined, undefined);
 			this.args && nextExec(this, this.$$fire);
 			return p;
 		}, // catch
@@ -69,7 +62,7 @@ this.PromiseLight = function () {
 			//	console.log('resolved twice:', val, this.args[1]);
 			//this.args = [null, arguments.length < 2 ? val : slice.call(arguments)];
 			this.args = [null, val, undefined, undefined];
-			this.pos < this.len && nextExec(this, this.$$fire);
+			this.que.head && nextExec(this, this.$$fire);
 		}, // resolve
 
 		// PromiseLight#$$reject
@@ -81,16 +74,14 @@ this.PromiseLight = function () {
 			//	err ? console.log('rejected after resolved:', err, this.args[1]) :
 			//	      console.log('resolved twice:', val, this.args[1]);
 			this.args = [err, val]; //arguments;
-			this.pos < this.len && nextExec(this, this.$$fire);
+			this.que.head && nextExec(this, this.$$fire);
 		}, // reject
 
 		// PromiseLight#$$fire
 		$$fire: function $$fire() {
-			for (; this.pos < this.len; ++this.pos) {
-				var elem = this.que[this.pos];
+			var elem;
+			while (elem = this.que.shift())
 				fire(this.args[0], this.args[1], elem[0], elem[1], elem[2], elem[3]);
-				this.que[this.pos] = undefined;
-			}
 		}, // fire
 
 		// PromiseLight#toString
@@ -158,19 +149,17 @@ this.PromiseLight = function () {
 
 	function PromiseLightSolved(args) {
 		var thunk = this;
-		thunk.pos = thunk.len = 0;
-		thunk.que = [];
+		thunk.que = new Queue;
 		thunk.args = args;
 		return;
 	} // PromiseLightSolved
 	PromiseLightSolved.prototype = PromiseLight.prototype;
 
-	function PromiseLightNext(elem) {
+	function PromiseLightNext(parent, reject, resolve, cb) {
 		var thunk = this;
-		thunk.pos = thunk.len = 0;
-		thunk.que = [];
+		thunk.que = new Queue;
 		thunk.args = null;
-		elem[3] = nxcb;
+		parent.que.push([reject, resolve, cb, nxcb]);
 		return;
 
 		function nxcb(err, val)  { return thunk.$$reject(err, val); }
@@ -179,8 +168,7 @@ this.PromiseLight = function () {
 
 	function PromiseLightDefer() {
 		var thunk = this;
-		thunk.pos = thunk.len = 0;
-		thunk.que = [];
+		thunk.que = new Queue;
 		thunk.args = null;
 		return {promise: thunk, resolve: resolve, reject: reject};
 
