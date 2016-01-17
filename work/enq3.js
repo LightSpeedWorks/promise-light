@@ -12,7 +12,7 @@ void function () {
 	Queue.prototype.shift = function shift() {
 		if (!this.head) return undefined;
 		var x = this.head;
-		this.head = this.head.next_obj;
+		this.head = x.next_obj;
 		if (!this.head) this.tail = undefined;
 		return x;
 	};

@@ -17,26 +17,28 @@ this.PromiseLight = function () {
 		typeof setImmediate === 'function' ? setImmediate :
 		function nextTickDo(fn) { setTimeout(fn, 0); };
 
-	var Queue = require('./enq3');
-	var nextExecTasks = new Queue();
+	var nextExecTasks = {head:undefined, tail:undefined};
 	var nextExecProgress = false;
 
 	// nextExec(ctx, fn)
 	function nextExec(ctx, fn) {
-		nextExecTasks.push({ctx:ctx, fn:fn, next_obj:undefined});
+		var task = {ctx:ctx, fn:fn, chain:undefined};
+		nextExecTasks.tail = nextExecTasks.tail ? (nextExecTasks.tail.chain = task) : (nextExecTasks.head = task);
 
 		if (nextExecProgress) return;
 		nextExecProgress = true;
+		nextTickDo(nextTickExec);
+	}
 
-		nextTickDo(function () {
-			var task;
+	function nextTickExec() {
+		var task;
+		while (task = nextExecTasks.head) {
+			nextExecTasks.head = task.chain;
+			if (!nextExecTasks.head) nextExecTasks.tail = undefined;
 
-			while (task = nextExecTasks.shift())
-				task.fn(task.ctx);
-
-			//nextExecTasks.clear();
-			nextExecProgress = false;
-		});
+			task.fn(task.ctx);
+		}
+		nextExecProgress = false;
 	}
 
 	var setProto = Object.setPrototypeOf ||
@@ -162,8 +164,11 @@ this.PromiseLight = function () {
 
 	// $$fire
 	function $$fire(thunk) {
-		while (thunk.head) {
-			var bomb = $$deq(thunk);
+		var bomb;
+		while (bomb = thunk.head) {
+			thunk.head = bomb.chain;
+			if (!thunk.head) thunk.tail = undefined;
+
 			fire(thunk, thunk.args[0], thunk.args[1], bomb.rej, bomb.res, bomb.cb, bomb.nxcb);
 		}
 		thunk.args[0] && nextExec(thunk, $$checkUnhandledRejection);
@@ -213,22 +218,6 @@ this.PromiseLight = function () {
 	} // rejectionHandled
 
 
-
-	// $$enq
-	function $$enq(thunk, bomb) {
-		thunk.tail = thunk.tail ? (thunk.tail.chain = bomb) : (thunk.head = bomb);
-	} // $$enq
-
-	// $$deq
-	function $$deq(thunk) {
-		var bomb = thunk.head;
-		if (!bomb) return undefined;
-		thunk.head = bomb.chain;
-		if (!thunk.head) thunk.tail = undefined;
-		return bomb;
-	} // $$deq
-
-
 	function isPromise(p) {
 		return p instanceof PromiseLight || p instanceof Promise || (!!p && p.then);
 	}
@@ -251,7 +240,10 @@ this.PromiseLight = function () {
 		thunk.flag = 0;
 		thunk.tail = thunk.head = undefined;
 		thunk.args = null;
-		$$enq(parent, {rej:reject, res:resolve, cb:cb, nxcb:nxcb, chain:undefined});
+
+		var bomb = {rej:reject, res:resolve, cb:cb, nxcb:nxcb, chain:undefined};
+		parent.tail = parent.tail ? (parent.tail.chain = bomb) : (parent.head = bomb);
+
 		return thunk;
 
 		function thunk(cb)        { return $$thunk(thunk, cb); }
