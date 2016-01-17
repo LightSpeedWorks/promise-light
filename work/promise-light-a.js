@@ -55,7 +55,11 @@ this.PromiseLight = function () {
 			//if (!(this instanceof PromiseLight))
 			//	throw new Error('new PromiseLight!!!');
 
-			setProto(thunk, PromiseLight.prototype);
+			//setProto(thunk, PromiseLight.prototype);
+			//thunk.__proto__ = PromiseLight.prototype;
+			thunk.then     = then;
+			thunk['catch'] = caught;
+			thunk.toString = toString;
 			thunk.flag = 0;
 			thunk.tail = thunk.head = undefined;
 			thunk.args = null;
@@ -72,23 +76,13 @@ this.PromiseLight = function () {
 		}, // PromiseLight
 
 		// PromiseLight#then
-		then: function then(resolve, reject) {
-			var p = new PromiseLightNext(this, reject, resolve, undefined);
-			this.args && nextExec(this, $$fire);
-			return p;
-		}, // then
+		then: then,
 
 		// PromiseLight#catch
-		'catch': function caught(reject) {
-			var p = new PromiseLightNext(this, reject, undefined, undefined);
-			this.args && nextExec(this, $$fire);
-			return p;
-		}, // catch
+		'catch': caught, // catch
 
 		// PromiseLight#toString
-		toString: function toString() {
-			return 'PromLit { ' + JSON.stringify(this.args) + ' }';
-		} // toString
+		toString: toString
 	},
 
 	{ // statics
@@ -130,6 +124,21 @@ this.PromiseLight = function () {
 		}
 	}); // PromiseLight
 
+	function then(resolve, reject) {
+		var p = new PromiseLightNext(this, reject, resolve, undefined);
+		this.args && nextExec(this, $$fire);
+		return p;
+	}
+
+	function caught(reject) {
+		var p = new PromiseLightNext(this, reject, undefined, undefined);
+		this.args && nextExec(this, $$fire);
+		return p;
+	}
+
+	function toString() {
+		return 'PromLit { ' + JSON.stringify(this.args) + ' }';
+	}
 
 	// resolve
 	function $$resolve(thunk, val) {
@@ -223,12 +232,15 @@ this.PromiseLight = function () {
 	}
 
 	function PromiseLightSolved(args) {
-		setProto(thunk, PromiseLight.prototype);
+		//setProto(thunk, PromiseLight.prototype);
+		//thunk.__proto__ = PromiseLight.prototype;
+		thunk.then     = then;
+		thunk['catch'] = caught;
+		thunk.toString = toString;
 		thunk.flag = 0;
 		thunk.tail = thunk.head = undefined;
 		thunk.args = args;
 		args[0] && nextExec(thunk, $$fire);
-		//args[0] && nextExec(thunk, $$checkUnhandledRejection);
 		return thunk;
 
 		function thunk(cb)        { return $$thunk(thunk, cb); }
@@ -236,7 +248,11 @@ this.PromiseLight = function () {
 	PromiseLightSolved.prototype = PromiseLight.prototype;
 
 	function PromiseLightNext(parent, reject, resolve, cb) {
-		setProto(thunk, PromiseLight.prototype);
+		//setProto(thunk, PromiseLight.prototype);
+		//thunk.__proto__ = PromiseLight.prototype;
+		thunk.then     = then;
+		thunk['catch'] = caught;
+		thunk.toString = toString;
 		thunk.flag = 0;
 		thunk.tail = thunk.head = undefined;
 		thunk.args = null;
@@ -252,7 +268,11 @@ this.PromiseLight = function () {
 	PromiseLightNext.prototype = PromiseLight.prototype;
 
 	function PromiseLightDefer() {
-		setProto(thunk, PromiseLight.prototype);
+		//setProto(thunk, PromiseLight.prototype);
+		//thunk.__proto__ = PromiseLight.prototype;
+		thunk.then     = then;
+		thunk['catch'] = caught;
+		thunk.toString = toString;
 		thunk.flag = 0;
 		thunk.tail = thunk.head = undefined;
 		thunk.args = null;

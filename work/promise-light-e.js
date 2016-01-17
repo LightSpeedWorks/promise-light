@@ -227,7 +227,6 @@ this.PromiseLight = function () {
 		thunk.tail = thunk.head = undefined;
 		thunk.args = args;
 		args[0] && nextExec(thunk, $$fire);
-		//args[0] && nextExec(thunk, $$checkUnhandledRejection);
 		return thunk;
 	} // PromiseLightSolved
 	PromiseLightSolved.prototype = PromiseLight.prototype;
