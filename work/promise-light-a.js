@@ -41,9 +41,6 @@ this.PromiseLight = function () {
 		nextExecProgress = false;
 	}
 
-	var setProto = Object.setPrototypeOf ||
-	function setProto(obj, proto) { obj.__proto__ = proto; };
-
 
 	var PROMISE_FLAG_HANDLED = 1;
 	var PROMISE_FLAG_UNHANDLED_REJECTION = 2;
@@ -55,8 +52,6 @@ this.PromiseLight = function () {
 			//if (!(this instanceof PromiseLight))
 			//	throw new Error('new PromiseLight!!!');
 
-			//setProto(thunk, PromiseLight.prototype);
-			//thunk.__proto__ = PromiseLight.prototype;
 			thunk.then     = then;
 			thunk['catch'] = caught;
 			thunk.toString = toString;
@@ -232,8 +227,6 @@ this.PromiseLight = function () {
 	}
 
 	function PromiseLightSolved(args) {
-		//setProto(thunk, PromiseLight.prototype);
-		//thunk.__proto__ = PromiseLight.prototype;
 		thunk.then     = then;
 		thunk['catch'] = caught;
 		thunk.toString = toString;
@@ -248,8 +241,6 @@ this.PromiseLight = function () {
 	PromiseLightSolved.prototype = PromiseLight.prototype;
 
 	function PromiseLightNext(parent, reject, resolve, cb) {
-		//setProto(thunk, PromiseLight.prototype);
-		//thunk.__proto__ = PromiseLight.prototype;
 		thunk.then     = then;
 		thunk['catch'] = caught;
 		thunk.toString = toString;
@@ -268,8 +259,6 @@ this.PromiseLight = function () {
 	PromiseLightNext.prototype = PromiseLight.prototype;
 
 	function PromiseLightDefer() {
-		//setProto(thunk, PromiseLight.prototype);
-		//thunk.__proto__ = PromiseLight.prototype;
 		thunk.then     = then;
 		thunk['catch'] = caught;
 		thunk.toString = toString;
