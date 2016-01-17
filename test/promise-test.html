@@ -47,26 +47,26 @@ c.log('PromiseLight8', this.PromiseLight8.name);
 this.bluebird = null;
 this.require = function require() { return null; };
 describe('describe1', function () {
-  it('it1', function () {
-    var p = new PromiseLight(function (res, rej) {
-      res('ok');
-    });
-    c.info('describe1 - it1 - 1 - ' + p);
-    p = p.then(
-      function (v) { c.info('it1 ok? ' + v); return 'ok1'; },
-      function (e) { c.error('it1 err? ' + e); return 'err1'; });
-    c.info('describe1 - it1 - 2 - ' + p);
-    return p;
-  });
-  it('it2', function () {
-    var p = PromiseLight.resolve('ok');
-    c.info('describe1 - it2 - 1 - ' + p);
-    p = p.then(
-      function (v) { c.info('it2 ok? ' + v); return 'ok2'; },
-      function (e) { c.error('it2 err? ' + e); return 'err2'; });
-    c.info('describe1 - it2 - 2 - ' + p);
-    return p;
-  });
+	it('it1', function () {
+		var p = new PromiseLight(function (res, rej) {
+			res('ok');
+		});
+		c.info('describe1 - it1 - 1 - ' + p);
+		p = p.then(
+			function (v) { c.info('it1 ok? ' + v); return 'ok1'; },
+			function (e) { c.error('it1 err? ' + e); return 'err1'; });
+		c.info('describe1 - it1 - 2 - ' + p);
+		return p;
+	});
+	it('it2', function () {
+		var p = PromiseLight.resolve('ok');
+		c.info('describe1 - it2 - 1 - ' + p);
+		p = p.then(
+			function (v) { c.info('it2 ok? ' + v); return 'ok2'; },
+			function (e) { c.error('it2 err? ' + e); return 'err2'; });
+		c.info('describe1 - it2 - 2 - ' + p);
+		return p;
+	});
 });
 </script>
 <script src="promise-test.js"></script>
