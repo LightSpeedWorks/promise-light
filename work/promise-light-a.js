@@ -208,7 +208,7 @@ this.PromiseLight = function () {
 
 	// $$rejectionHandled
 	function $$rejectionHandled(thunk) {
-		process.emit('rejectionHandled', thunk.args[0], thunk);
+		process.emit('rejectionHandled', thunk);
 		console.log('UNHANDLED REJECTION HANDLED!?');
 	} // rejectionHandled
 
@@ -273,7 +273,7 @@ this.PromiseLight = function () {
 	PromiseLightDefer.prototype = PromiseLight.prototype;
 
 
-	
+	/*
 	var p1 = PromiseLight.reject(new Error);
 	setTimeout(function () {
 		p1.catch(function () {});
@@ -282,7 +282,7 @@ this.PromiseLight = function () {
 	setTimeout(function () {
 		p2.catch(function () {});
 	}, 1);
-	
+	*/
 
 
 	if (typeof module === 'object' && module && module.exports)
