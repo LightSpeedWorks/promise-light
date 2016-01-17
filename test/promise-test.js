@@ -1,5 +1,18 @@
-console.log('promise-test.js 1');
-this.promiseTest = function ($module, $print, assert, describe, it,
+function errmsg(err) {
+	var msg = err.stack || err + '';
+	return msg.split('\n').filter(function (s) { return !s.match(/mocha/); }).join('\n');
+}
+
+if (typeof process !== 'undefined') {
+	process.on('unhandledRejection', function (err, p) {
+		console.log('\x1b[1;33m* UnhandledRejection:\x1b[36m', p, '\x1b[35m\n*', errmsg(err), '\x1b[m');
+	});
+	process.on('rejectionHandled', function (p) {
+		console.log('\x1b[1;33m* RejectionHandled:\x1b[36m  ', p, '\x1b[35m\n*', errmsg(new Error), '\x1b[m');
+	});
+}
+
+void function ($module, $print, assert, describe, it,
 		PromiseCore,
 		PromiseLight, PromiseLight4, PromiseLight6, PromiseLight8) {
 	'use strict';
@@ -22,7 +35,7 @@ this.promiseTest = function ($module, $print, assert, describe, it,
 		'promise-thunk': PromiseThunk
 	};
 
-	console.log(promises);
+	//console.log(promises);
 
 	// Object.keys for ie8
 	if (!Object.keys)
@@ -119,19 +132,35 @@ this.promiseTest = function ($module, $print, assert, describe, it,
 
 			it('Promise setup unhandled resolve', function () {
 				return new Promise(function (resolve, reject) {
-					new Promise(function (res, rej) {
+					var p = new Promise(function (res, rej) {
 						res(123);
 						resolve('ok');
 					});
+					setTimeout(function () {
+						p.then(function () {
+							//console.log('Promise setup unhandled resolve: ok');
+						},
+						function () {
+							console.log('\x1b[1;31mPromise setup unhandled resolve: ng\x1b[m');
+						});
+					}, 1);
 				});
 			}); // it Promise setup unhandled resolve
 
 			it('Promise setup unhandled reject', function () {
 				return new Promise(function (resolve, reject) {
-					new Promise(function (res, rej) {
+					var p = new Promise(function (res, rej) {
 						rej(new Error('ng: unhandled reject'));
 						resolve('ok');
 					});
+					setTimeout(function () {
+						p.then(function () {
+							console.log('\x1b[1;31mPromise setup unhandled reject: ngx1b[m');
+						},
+						function () {
+							//console.log('\x1b[1;31mPromise setup unhandled reject: ok\x1b[m');
+						});
+					}, 1);
 				});
 			}); // it Promise setup unhandled reject
 
@@ -281,6 +310,14 @@ this.promiseTest = function ($module, $print, assert, describe, it,
 					function (err) {
 						assert(false, 'ng: ' + err); });
 			}); // it Promise.resolve string
+
+			it('Promise.resolve boolean', function () {
+				return Promise.resolve(true).then(
+					function (val) {
+						assert.equal(val, true); },
+					function (err) {
+						assert(false, 'ng: ' + err); });
+			}); // it Promise.resolve boolean
 
 			it('Promise.resolve promise', function () {
 				return Promise.resolve(delay(10, 'ok')).then(
@@ -590,4 +627,3 @@ this.promiseTest = function ($module, $print, assert, describe, it,
 		typeof PromiseLight6 === 'function' ? PromiseLight6 : require('../work/promise-light6'),
 		typeof PromiseLight8 === 'function' ? PromiseLight8 : require('../work/promise-light8')
 		);
-console.log('promise-test.js 2');
