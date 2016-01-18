@@ -8,8 +8,6 @@ this.PromiseLight = function () {
 	var extend = require('./extend-light');
 	//var setValue = require('./set-value');
 
-	// TODO other class
-
 	//var nextExec = require('./next-exec');
 	var nextTickDo =
 		typeof process === 'object' && process &&
