@@ -49,6 +49,9 @@ this.PromiseLight = function () {
 
 	var PROMISE_FLAG_HANDLED = 1;
 	var PROMISE_FLAG_UNHANDLED_REJECTION = 2;
+	var PROMISE_FLAG_RESOLVED = 4;
+	var PROMISE_FLAG_REJECTED = 8;
+	var PROMISE_FLAG_SOLVED = PROMISE_FLAG_RESOLVED | PROMISE_FLAG_REJECTED;
 
 
 	// PromiseLight
@@ -60,15 +63,15 @@ this.PromiseLight = function () {
 			var thunk = this;
 			thunk.flag = 0;
 			thunk.tail = thunk.head = undefined;
-			thunk.args = null;
+			thunk.result = undefined;
 
 			try{ setup(resolve, reject); }
 			catch (err) { reject(err); }
 
 			return thunk;
 
-			function resolve(val)     { return $$resolve(thunk, val); }
-			function reject(err, val) { return $$reject(thunk, err, val); }
+			function resolve(val) { return $$resolve(thunk, val); }
+			function reject(err)  { return $$reject(thunk, err); }
 		}, // PromiseLight
 
 		// PromiseLight#then
@@ -112,34 +115,34 @@ this.PromiseLight = function () {
 
 		//PromiseLight.resolve
 		resolve: function resolve(val) {
-			return new PromiseLightSolved([null, val]);
+			return new PromiseLightSolved(PROMISE_FLAG_RESOLVED, val);
 		},
 		//PromiseLight.reject
 		reject: function reject(err) {
-			return new PromiseLightSolved([err]);
+			return new PromiseLightSolved(PROMISE_FLAG_REJECTED, err);
 		}
 	}); // PromiseLight
 
 	function toString() {
-		return 'PromLit { ' + JSON.stringify(this.args) + ' }';
+		return 'PromLit { ' + JSON.stringify(this.result) + ' }';
 	}
 
 	function then(resolve, reject) {
 		var p = new PromiseLightNext(this, reject, resolve, undefined);
-		if (this.args) nextExec(this, $$fire);
+		if (this.flag & PROMISE_FLAG_SOLVED) nextExec(this, $$fire);
 		return p;
 	}
 
 	function caught(reject) {
 		var p = new PromiseLightNext(this, reject, undefined, undefined);
-		if (this.args) nextExec(this, $$fire);
+		if (this.flag & PROMISE_FLAG_SOLVED) nextExec(this, $$fire);
 		return p;
 	}
 
 	// $$thunk
 	function $$thunk(thunk, cb) {
 		var p = new PromiseLightNext(thunk, undefined, undefined, cb);
-		if (thunk.args) nextExec(thunk, $$fire);
+		if (thunk.flag & PROMISE_FLAG_SOLVED) nextExec(thunk, $$fire);
 		return p;
 	} // $$thunk
 
@@ -149,21 +152,42 @@ this.PromiseLight = function () {
 		//	console.log('resolved after rejected:', val, thunk.args[0]) :
 		//	console.log('resolved twice:', val, thunk.args[1]);
 		//thunk.args = [null, arguments.length <= 2 ? val : slice.call(arguments, 1)];
-		thunk.args = [null, val];
+		thunk.result = val;
+		thunk.flag |= PROMISE_FLAG_RESOLVED;
 		if (thunk.head) nextExec(thunk, $$fire);
 	} // $$resolve
 
 	// $$reject
-	function $$reject(thunk, err, val) {
+	function $$reject(thunk, err) {
 		//if (thunk.args) return thunk.args[0] ?
 		//	err ? console.log('rejected twice:', err, thunk.args[0]) :
 		//	      console.log('resolved after rejected:', val, thunk.args[0]) :
 		//	err ? console.log('rejected after resolved:', err, thunk.args[1]) :
 		//	      console.log('resolved twice:', val, thunk.args[1]);
-		thunk.args = [err, val];
+		thunk.result = err;
+		thunk.flag |= PROMISE_FLAG_REJECTED;
+		if (thunk.head) nextExec(thunk, $$fire);
+		else nextExec(thunk, $$checkUnhandledRejection);
+	} // $$reject
+
+	// $$callback
+	function $$callback(thunk, err, val) {
+		//if (thunk.args) return thunk.args[0] ?
+		//	err ? console.log('rejected twice:', err, thunk.args[0]) :
+		//	      console.log('resolved after rejected:', val, thunk.args[0]) :
+		//	err ? console.log('rejected after resolved:', err, thunk.args[1]) :
+		//	      console.log('resolved twice:', val, thunk.args[1]);
+		if (err) {
+			thunk.result = err;
+			thunk.flag |= PROMISE_FLAG_REJECTED;
+		}
+		else {
+			thunk.result = val;
+			thunk.flag |= PROMISE_FLAG_RESOLVED;
+		}
 		if (thunk.head) nextExec(thunk, $$fire);
 		else if (err) nextExec(thunk, $$checkUnhandledRejection);
-	} // $$reject
+	} // $$callback
 
 	// $$fire
 	function $$fire(thunk) {
@@ -172,24 +196,27 @@ this.PromiseLight = function () {
 			thunk.head = bomb.chain;
 			if (!thunk.head) thunk.tail = undefined;
 
-			fire(thunk, thunk.args[0], thunk.args[1], bomb.rej, bomb.res, bomb.cb);
+			fire(thunk, thunk.result, bomb.rej, bomb.res, bomb.cb);
 		}
-		if (thunk.args[0]) nextExec(thunk, $$checkUnhandledRejection);
+		if (thunk.flag & PROMISE_FLAG_REJECTED) nextExec(thunk, $$checkUnhandledRejection);
 	} // $$fire
 
-	function fire(thunk, err, val, rej, res, cb) {
+	function fire(thunk, result, rej, res, cb) {
+		var err, val;
+		if (thunk.flag & PROMISE_FLAG_REJECTED) err = result;
+		else val = result;
 		try {
 			var r = cb ? cb(err, val) :
 				err ? (rej ? rej(err) : err) :
-				res ? res(val) :
-				undefined;
+				res ? res(val) : undefined;
 			if (r && r.then)
-				r.then(function (v) { return $$reject(thunk, null, v); },
+				r.then(function (v) { return $$resolve(thunk, v); },
 					function (e) { return $$reject(thunk, e); });
 			else if (typeof r === 'function')
-				r(function (e, v) { return $$reject(thunk, e, v); });
+				r(function (e, v) { return $$callback(thunk, e, v); });
 			else if (r instanceof Error) $$reject(thunk, r);
-			else $$reject(thunk, null, r);
+			else $$resolve(thunk, r);
+
 			if ((thunk.flag & PROMISE_FLAG_UNHANDLED_REJECTION) &&
 				!(thunk.flag & PROMISE_FLAG_HANDLED))
 				$$rejectionHandled(thunk);
@@ -208,7 +235,7 @@ this.PromiseLight = function () {
 
 	// $$unhandledRejection
 	function $$unhandledRejection(thunk) {
-		process.emit('unhandledRejection', thunk.args[0], thunk);
+		process.emit('unhandledRejection', thunk.result, thunk);
 		console.log('UNHANDLED REJECTION!?');
 	} // unhandledRejection
 
@@ -222,12 +249,12 @@ this.PromiseLight = function () {
 		return p instanceof PromiseLight || p instanceof Promise || (!!p && p.then);
 	}
 
-	function PromiseLightSolved(args) {
+	function PromiseLightSolved(flag, result) {
 		var thunk = this;
-		thunk.flag = 0;
+		thunk.flag = flag;
 		thunk.tail = thunk.head = undefined;
-		thunk.args = args;
-		if (args[0]) nextExec(thunk, $$fire);
+		thunk.result = result;
+		if (flag & PROMISE_FLAG_REJECTED) nextExec(thunk, $$fire);
 		return thunk;
 	} // PromiseLightSolved
 	PromiseLightSolved.prototype = PromiseLight.prototype;
@@ -236,7 +263,7 @@ this.PromiseLight = function () {
 		var thunk = this;
 		thunk.flag = 0;
 		thunk.tail = thunk.head = undefined;
-		thunk.args = null;
+		thunk.result = undefined;
 
 		var bomb = {rej:reject, res:resolve, cb:cb, chain:undefined};
 		parent.tail = parent.tail ? (parent.tail.chain = bomb) : (parent.head = bomb);
@@ -249,11 +276,11 @@ this.PromiseLight = function () {
 		var thunk = this;
 		thunk.flag = 0;
 		thunk.tail = thunk.head = undefined;
-		thunk.args = null;
+		thunk.result = undefined;
 		return {promise: thunk, resolve: resolve, reject: reject};
 
-		function resolve(val)     { return $$resolve(thunk, val); }
-		function reject(err, val) { return $$reject(thunk, err, val); }
+		function resolve(val) { return $$resolve(thunk, val); }
+		function reject(err)  { return $$reject(thunk, err); }
 	} // PromiseLightDefer
 	PromiseLightDefer.prototype = PromiseLight.prototype;
 

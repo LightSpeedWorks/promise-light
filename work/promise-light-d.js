@@ -174,8 +174,7 @@ this.PromiseLight = function () {
 		try {
 			var r = cb ? cb(err, val) :
 				err ? (rej ? rej(err) : err) :
-				res ? res(val) :
-				undefined;
+				res ? res(val) : undefined;
 			if (r && r.then)
 				r.then(function (v) { return $$reject(thunk, null, v); },
 					function (e) { return $$reject(thunk, e); });
