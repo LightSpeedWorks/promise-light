@@ -37,7 +37,8 @@ this.PromiseLight = function () {
 				tasks.head = task.chain;
 				if (!tasks.head) tasks.tail = undefined;
 
-				task.fn(task.ctx);
+				var fn = task.fn;
+				fn(task.ctx);
 			}
 			progress = false;
 		}
@@ -125,20 +126,20 @@ this.PromiseLight = function () {
 
 	function then(resolve, reject) {
 		var p = new PromiseLightNext(this, reject, resolve, undefined);
-		this.args && nextExec(this, $$fire);
+		if (this.args) nextExec(this, $$fire);
 		return p;
 	}
 
 	function caught(reject) {
 		var p = new PromiseLightNext(this, reject, undefined, undefined);
-		this.args && nextExec(this, $$fire);
+		if (this.args) nextExec(this, $$fire);
 		return p;
 	}
 
 	// $$thunk
 	function $$thunk(thunk, cb) {
 		var p = new PromiseLightNext(thunk, undefined, undefined, cb);
-		thunk.args && nextExec(thunk, $$fire);
+		if (thunk.args) nextExec(thunk, $$fire);
 		return p;
 	} // $$thunk
 
@@ -149,7 +150,7 @@ this.PromiseLight = function () {
 		//	console.log('resolved twice:', val, thunk.args[1]);
 		//thunk.args = [null, arguments.length <= 2 ? val : slice.call(arguments, 1)];
 		thunk.args = [null, val];
-		thunk.head && nextExec(thunk, $$fire);
+		if (thunk.head) nextExec(thunk, $$fire);
 	} // $$resolve
 
 	// $$reject
@@ -160,8 +161,8 @@ this.PromiseLight = function () {
 		//	err ? console.log('rejected after resolved:', err, thunk.args[1]) :
 		//	      console.log('resolved twice:', val, thunk.args[1]);
 		thunk.args = [err, val];
-		thunk.head && nextExec(thunk, $$fire) ||
-		err && nextExec(thunk, $$checkUnhandledRejection);
+		if (thunk.head) nextExec(thunk, $$fire);
+		else if (err) nextExec(thunk, $$checkUnhandledRejection);
 	} // $$reject
 
 	// $$fire
@@ -173,7 +174,7 @@ this.PromiseLight = function () {
 
 			fire(thunk, thunk.args[0], thunk.args[1], bomb.rej, bomb.res, bomb.cb);
 		}
-		thunk.args[0] && nextExec(thunk, $$checkUnhandledRejection);
+		if (thunk.args[0]) nextExec(thunk, $$checkUnhandledRejection);
 	} // $$fire
 
 	function fire(thunk, err, val, rej, res, cb) {
@@ -226,7 +227,7 @@ this.PromiseLight = function () {
 		thunk.flag = 0;
 		thunk.tail = thunk.head = undefined;
 		thunk.args = args;
-		args[0] && nextExec(thunk, $$fire);
+		if (args[0]) nextExec(thunk, $$fire);
 		return thunk;
 	} // PromiseLightSolved
 	PromiseLightSolved.prototype = PromiseLight.prototype;

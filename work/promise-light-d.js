@@ -37,7 +37,8 @@ this.PromiseLight = function () {
 				tasks.head = task.chain;
 				if (!tasks.head) tasks.tail = undefined;
 
-				task.fn(task.ctx);
+				var fn = task.fn;
+				fn(task.ctx);
 			}
 			progress = false;
 		}
@@ -165,22 +166,24 @@ this.PromiseLight = function () {
 			thunk.head = bomb.chain;
 			if (!thunk.head) thunk.tail = undefined;
 
-			fire(thunk.args[0], thunk.args[1], bomb.rej, bomb.res, bomb.cb, bomb.nxcb);
+			fire(thunk, thunk.args[0], thunk.args[1], bomb.rej, bomb.res, bomb.cb);
 		}
 	} // $$fire
 
-	function fire(err, val, rej, res, cb, nxcb) {
+	function fire(thunk, err, val, rej, res, cb) {
 		try {
 			var r = cb ? cb(err, val) :
 				err ? (rej ? rej(err) : err) :
 				res ? res(val) :
 				undefined;
 			if (r && r.then)
-				r.then(function (v) { return nxcb(null, v); }, nxcb);
-			else if (typeof r === 'function') r(nxcb);
-			else if (r instanceof Error) nxcb(r);
-			else nxcb(null, r);
-		} catch (e) { nxcb(e); }
+				r.then(function (v) { return $$reject(thunk, null, v); },
+					function (e) { return $$reject(thunk, e); });
+			else if (typeof r === 'function')
+				r(function (e, v) { return $$reject(thunk, e, v); });
+			else if (r instanceof Error) $$reject(thunk, r);
+			else $$reject(thunk, null, r);
+		} catch (e) { $$reject(thunk, e); }
 	} // fire
 
 	function isPromise(p) {
@@ -200,12 +203,10 @@ this.PromiseLight = function () {
 		thunk.tail = thunk.head = undefined;
 		thunk.args = null;
 
-		var bomb = {rej:reject, res:resolve, cb:cb, nxcb:nxcb, chain:undefined};
+		var bomb = {rej:reject, res:resolve, cb:cb, chain:undefined};
 		parent.tail = parent.tail ? (parent.tail.chain = bomb) : (parent.head = bomb);
 
 		return thunk;
-
-		function nxcb(err, val)  { return $$reject(thunk, err, val); }
 	} // PromiseLightNext
 	PromiseLightNext.prototype = PromiseLight.prototype;
 
