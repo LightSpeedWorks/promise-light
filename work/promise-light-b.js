@@ -7,10 +7,47 @@ this.PromiseLight = function () {
 
 	var extend = require('./extend-light');
 	//var setValue = require('./set-value');
-	//var Queue = require('./enq');
-	//Queue.extend = extend;
 
-	var nextExec = require('./next-exec');
+	//var nextExec = require('./next-exec');
+	var nextTickDo =
+		typeof process === 'object' && process &&
+		typeof process.nextTick === 'function' ? process.nextTick :
+		typeof setImmediate === 'function' ? setImmediate :
+		function nextTickDo(fn) { setTimeout(fn, 0); };
+
+	// nextExec(ctx, fn)
+	var nextExec = function () {
+		// tasks {head, tail}
+		var tasks = {head:undefined, tail:undefined};
+		var progress = false;
+
+		// nextExec(ctx, fn)
+		function nextExec(ctx, fn) {
+			var task = {ctx:ctx, fn:fn, chain:undefined};
+			tasks.tail = tasks.tail ? (tasks.tail.chain = task) : (tasks.head = task);
+
+			if (progress) return;
+			progress = true;
+			nextTickDo(nextTickExec);
+		}
+
+		function nextTickExec() {
+			var task;
+			while (task = tasks.head) {
+				tasks.head = task.chain;
+				if (!tasks.head) tasks.tail = undefined;
+
+				task.fn(task.ctx);
+			}
+			progress = false;
+		}
+
+		return nextExec;
+	}(); // nextExec
+
+
+	var PROMISE_FLAG_HANDLED = 1;
+	var PROMISE_FLAG_UNHANDLED_REJECTION = 2;
 
 
 	// PromiseLight
@@ -20,122 +57,27 @@ this.PromiseLight = function () {
 			//	throw new Error('new PromiseLight!!!');
 
 			var thunk = this;
-			thunk.pos = thunk.len = 0;
-			thunk.que = [];
+			thunk.flag = 0;
+			thunk.tail = thunk.head = undefined;
 			thunk.args = null;
 
 			try{ setup(resolve, reject); }
 			catch (err) { reject(err); }
 
-			return;
+			return thunk;
 
-			function resolve(val)     { return thunk.$$resolve(val); }
-			function reject(err, val) { return thunk.$$reject(err, val); }
-
+			function resolve(val)     { return $$resolve(thunk, val); }
+			function reject(err, val) { return $$reject(thunk, err, val); }
 		}, // PromiseLight
 
-		// PromiseLight#$$thunk
-		$$thunk: function $$thunk(cb) {
-			var elem = [undefined, undefined, cb, undefined];
-			this.que[this.len++] = elem;
-			var p = new PromiseLightNext(elem);
-			//this.args && this.$$fire(); //nextExec(this, this.$$fire);
-			if (this.args) for (; this.pos < this.len; ++this.pos) {
-				nextExec({args:this.args, elem:this.que[this.pos]}, function () {
-					var args = this.args, elem = this.elem;
-					fire(args[0], args[1], elem[0], elem[1], elem[2], elem[3]);
-				});
-				this.que[this.pos] = undefined;
-			}
-			return p;
-		}, // $$thunk
-
 		// PromiseLight#then
-		then: function then(resolve, reject) {
-			var elem = [reject, resolve, undefined, undefined];
-			this.que[this.len++] = elem;
-			var p = new PromiseLightNext(elem);
-			//this.args && this.$$fire(); //nextExec(this, this.$$fire);
-			if (this.args) for (; this.pos < this.len; ++this.pos) {
-				nextExec({args:this.args, elem:this.que[this.pos]}, function () {
-					var args = this.args, elem = this.elem;
-					fire(args[0], args[1], elem[0], elem[1], elem[2], elem[3]);
-				});
-				this.que[this.pos] = undefined;
-			}
-			return p;
-		}, // then
+		then: then,
 
 		// PromiseLight#catch
-		'catch': function caught(reject) {
-			var elem = [reject, undefined, undefined, undefined];
-			this.que[this.len++] = elem;
-			var p = new PromiseLightNext(elem);
-			//this.args && this.$$fire(); //nextExec(this, this.$$fire);
-			if (this.args) for (; this.pos < this.len; ++this.pos) {
-				nextExec({args:this.args, elem:this.que[this.pos]}, function () {
-					var args = this.args, elem = this.elem;
-					fire(args[0], args[1], elem[0], elem[1], elem[2], elem[3]);
-				});
-				this.que[this.pos] = undefined;
-			}
-			return p;
-		}, // catch
+		'catch': caught, // catch
 
-		// PromiseLight#$$resolve
-		$$resolve: function $$resolve(val) {
-			//var thunk = this;
-			//if (this.args) return this.args[0] ?
-			//	console.log('resolved after rejected:', val, this.args[0]) :
-			//	console.log('resolved twice:', val, this.args[1]);
-			//this.args = [null, arguments.length < 2 ? val : slice.call(arguments)];
-			this.args = [null, val, undefined, undefined];
-			//this.$$fire();
-			//this.pos < this.len && nextExec(this, this.$$fire);
-			for (; this.pos < this.len; ++this.pos) {
-				nextExec({args:this.args, elem:this.que[this.pos]}, function () {
-					var args = this.args, elem = this.elem;
-					fire(args[0], args[1], elem[0], elem[1], elem[2], elem[3]);
-				});
-				this.que[this.pos] = undefined;
-			}
-		}, // resolve
-
-		// PromiseLight#$$reject
-		$$reject: function $$reject(err, val) {
-			//var thunk = this;
-			//if (this.args) return this.args[0] ?
-			//	err ? console.log('rejected twice:', err, this.args[0]) :
-			//	      console.log('resolved after rejected:', val, this.args[0]) :
-			//	err ? console.log('rejected after resolved:', err, this.args[1]) :
-			//	      console.log('resolved twice:', val, this.args[1]);
-			this.args = [err, val]; //arguments;
-			//this.$$fire();
-			//this.pos < this.len && nextExec(this, this.$$fire);
-			for (; this.pos < this.len; ++this.pos) {
-				nextExec({args:this.args, elem:this.que[this.pos]}, function () {
-					var args = this.args, elem = this.elem;
-					fire(args[0], args[1], elem[0], elem[1], elem[2], elem[3]);
-				});
-				this.que[this.pos] = undefined;
-			}
-		}, // reject
-/*
-		// PromiseLight#$$fire
-		$$fire: function $$fire() {
-			for (; this.pos < this.len; ++this.pos) {
-				nextExec({args:this.args, elem:this.que[this.pos]}, function () {
-					var args = this.args, elem = this.elem;
-					fire(args[0], args[1], elem[0], elem[1], elem[2], elem[3]);
-				});
-				this.que[this.pos] = undefined;
-			}
-		}, // fire
-*/
 		// PromiseLight#toString
-		toString: function toString() {
-			return 'PromLit { ' + JSON.stringify(this.args) + ' }';
-		} // toString
+		toString: toString
 	},
 
 	{ // statics
@@ -177,67 +119,155 @@ this.PromiseLight = function () {
 		}
 	}); // PromiseLight
 
-	function fire(err, val, rej, res, cb, nxcb) {
+	function toString() {
+		return 'PromLit { ' + JSON.stringify(this.args) + ' }';
+	}
+
+	function then(resolve, reject) {
+		var p = new PromiseLightNext(this, reject, resolve, undefined);
+		this.args && nextExec(this, $$fire);
+		return p;
+	}
+
+	function caught(reject) {
+		var p = new PromiseLightNext(this, reject, undefined, undefined);
+		this.args && nextExec(this, $$fire);
+		return p;
+	}
+
+	// $$thunk
+	function $$thunk(thunk, cb) {
+		var p = new PromiseLightNext(thunk, undefined, undefined, cb);
+		thunk.args && nextExec(thunk, $$fire);
+		return p;
+	} // $$thunk
+
+	// $$resolve
+	function $$resolve(thunk, val) {
+		//if (thunk.args) return thunk.args[0] ?
+		//	console.log('resolved after rejected:', val, thunk.args[0]) :
+		//	console.log('resolved twice:', val, thunk.args[1]);
+		//thunk.args = [null, arguments.length <= 2 ? val : slice.call(arguments, 1)];
+		thunk.args = [null, val];
+		thunk.head && nextExec(thunk, $$fire);
+	} // $$resolve
+
+	// $$reject
+	function $$reject(thunk, err, val) {
+		//if (thunk.args) return thunk.args[0] ?
+		//	err ? console.log('rejected twice:', err, thunk.args[0]) :
+		//	      console.log('resolved after rejected:', val, thunk.args[0]) :
+		//	err ? console.log('rejected after resolved:', err, thunk.args[1]) :
+		//	      console.log('resolved twice:', val, thunk.args[1]);
+		thunk.args = [err, val];
+		thunk.head && nextExec(thunk, $$fire) ||
+		err && nextExec(thunk, $$checkUnhandledRejection);
+	} // $$reject
+
+	// $$fire
+	function $$fire(thunk) {
+		var bomb;
+		while (bomb = thunk.head) {
+			thunk.head = bomb.chain;
+			if (!thunk.head) thunk.tail = undefined;
+
+			fire(thunk, thunk.args[0], thunk.args[1], bomb.rej, bomb.res, bomb.cb, bomb.nxcb);
+		}
+		thunk.args[0] && nextExec(thunk, $$checkUnhandledRejection);
+	} // $$fire
+
+	function fire(thunk, err, val, rej, res, cb, nxcb) {
 		try {
 			var r = cb ? cb(err, val) :
 				err ? (rej ? rej(err) : err) :
-				res ? res(val) : undefined;
+				res ? res(val) :
+				undefined;
 			if (r && r.then)
 				r.then(function (v) { return nxcb(null, v); }, nxcb);
 			else if (typeof r === 'function') r(nxcb);
 			else if (r instanceof Error) nxcb(r);
 			else nxcb(null, r);
+			if ((thunk.flag & PROMISE_FLAG_UNHANDLED_REJECTION) &&
+				!(thunk.flag & PROMISE_FLAG_HANDLED))
+				$$rejectionHandled(thunk);
+			thunk.flag |= PROMISE_FLAG_HANDLED;
 		} catch (e) { nxcb(e); }
-	}
+	} // fire
+
+	// $$checkUnhandledRejection
+	function $$checkUnhandledRejection(thunk) {
+		if (!(thunk.flag & PROMISE_FLAG_HANDLED)) {
+			if (!(thunk.flag & PROMISE_FLAG_UNHANDLED_REJECTION))
+				$$unhandledRejection(thunk);
+			thunk.flag |= PROMISE_FLAG_UNHANDLED_REJECTION;
+		}
+	} // checkUnhandledRejection
+
+	// $$unhandledRejection
+	function $$unhandledRejection(thunk) {
+		process.emit('unhandledRejection', thunk.args[0], thunk);
+		console.log('UNHANDLED REJECTION!?');
+	} // unhandledRejection
+
+	// $$rejectionHandled
+	function $$rejectionHandled(thunk) {
+		process.emit('rejectionHandled', thunk);
+		console.log('UNHANDLED REJECTION HANDLED!?');
+	} // rejectionHandled
 
 	function isPromise(p) {
 		return p instanceof PromiseLight || p instanceof Promise || (!!p && p.then);
 	}
 
-	var PromiseLightSolved = PromiseLight.extend({
-		constructor: function PromiseLightSolved(args) {
-			var thunk = this;
-			thunk.pos = thunk.len = 0;
-			thunk.que = [];
-			thunk.args = args;
-			return;
-		} // PromiseLightSolved
-	});
+	function PromiseLightSolved(args) {
+		var thunk = this;
+		thunk.flag = 0;
+		thunk.tail = thunk.head = undefined;
+		thunk.args = args;
+		args[0] && nextExec(thunk, $$fire);
+		return thunk;
+	} // PromiseLightSolved
+	PromiseLightSolved.prototype = PromiseLight.prototype;
 
-	var PromiseLightNext = PromiseLight.extend({
-		constructor: function PromiseLightNext(elem) {
-			var thunk = this;
-			thunk.pos = thunk.len = 0;
-			thunk.que = [];
-			thunk.args = null;
-			elem[3] = nxcb;
-			return;
+	function PromiseLightNext(parent, reject, resolve, cb) {
+		var thunk = this;
+		thunk.flag = 0;
+		thunk.tail = thunk.head = undefined;
+		thunk.args = null;
 
-			function nxcb(err, val)  { return thunk.$$reject(err, val); }
-		} // PromiseLightNext
-	});
+		var bomb = {rej:reject, res:resolve, cb:cb, nxcb:nxcb, chain:undefined};
+		parent.tail = parent.tail ? (parent.tail.chain = bomb) : (parent.head = bomb);
 
-	var PromiseLightDefer = PromiseLight.extend({
-		constructor: function PromiseLightDefer() {
-			var thunk = this;
-			thunk.pos = thunk.len = 0;
-			thunk.que = [];
-			thunk.args = null;
-			return {promise: thunk, resolve: resolve, reject: reject};
+		return thunk;
 
-			function resolve(val)     { return thunk.$$resolve(val); }
-			function reject(err, val) { return thunk.$$reject(err, val); }
-		} // PromiseLightDefer
-	});
+		function nxcb(err, val)   { return $$reject(thunk, err, val); }
+	} // PromiseLightNext
+	PromiseLightNext.prototype = PromiseLight.prototype;
+
+	function PromiseLightDefer() {
+		var thunk = this;
+		thunk.flag = 0;
+		thunk.tail = thunk.head = undefined;
+		thunk.args = null;
+		return {promise: thunk, resolve: resolve, reject: reject};
+
+		function resolve(val)     { return $$resolve(thunk, val); }
+		function reject(err, val) { return $$reject(thunk, err, val); }
+	} // PromiseLightDefer
+	PromiseLightDefer.prototype = PromiseLight.prototype;
 
 
-//	function log(x) { console.log('***', x); }
+	/*
+	var p1 = PromiseLight.reject(new Error);
+	setTimeout(function () {
+		p1.catch(function () {});
+	}, 1);
+	var p2 = PromiseLight.reject(new Error).then(function () {});
+	setTimeout(function () {
+		p2.catch(function () {});
+	}, 1);
+	*/
 
-//console.log('PromiseLight 7 loading...');
-//	PromiseLight.resolve('resolve 1').then(log, log);
-//	PromiseLight.reject(new Error('reject 1')).then(log, log);
-//	PromiseLight.all([PromiseLight.resolve('all 1')]).then(log, log);
-//console.log('PromiseLight 7 loaded...');
 
 	if (typeof module === 'object' && module && module.exports)
 		module.exports = PromiseLight;
