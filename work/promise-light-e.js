@@ -88,7 +88,7 @@ void function (PromiseOrg) {
 	{ // statics
 		// Promise.defer
 		defer: function defer() {
-			return new PromiseLightDefer();
+			return new PromiseDefer();
 		}, // defer
 
 		// Promise.all([p, ...])
@@ -142,32 +142,32 @@ void function (PromiseOrg) {
 	// Promise.resolve
 	function resolve(val) {
 		if (val && val.then) return val;
-		return new PromiseLightSolved(PROMISE_FLAG_RESOLVED, val);
+		return new PromiseSolved(PROMISE_FLAG_RESOLVED, val);
 	}
 
 	// Promise.reject
 	function reject(err) {
-		return new PromiseLightSolved(PROMISE_FLAG_REJECTED, err);
+		return new PromiseSolved(PROMISE_FLAG_REJECTED, err);
 	}
 
 	// Promise#toString()
 	function toString() {
-		return 'PromiseLight { ' + JSON.stringify(this.result) + ' }';
+		return 'PromiseLight { ' + this.result + ' }';
 	}
 
 	// Promise#then(resolve, reject)
 	function then(resolve, reject) {
-		return new PromiseLightNext(this, reject, resolve, undefined);
+		return new PromiseNext(this, reject, resolve, undefined);
 	}
 
 	// Promise#catch(reject)
 	function caught(reject) {
-		return new PromiseLightNext(this, reject, undefined, undefined);
+		return new PromiseNext(this, reject, undefined, undefined);
 	}
 
 	// $$thunk
 	function $$thunk(thunk, cb) {
-		return new PromiseLightNext(thunk, undefined, undefined, cb);
+		return new PromiseNext(thunk, undefined, undefined, cb);
 	}
 
 	// $$resolve
@@ -198,8 +198,7 @@ void function (PromiseOrg) {
 		//	      console.log('resolved twice:', val, thunk.args[1]);
 		thunk.result = err;
 		thunk.flag |= PROMISE_FLAG_REJECTED;
-		if (thunk.head) nextExec(thunk, $$fire);
-		else nextExec(thunk, $$checkUnhandledRejection);
+		nextExec(thunk, $$fire);
 	} // $$reject
 
 	// $$callback
@@ -218,8 +217,7 @@ void function (PromiseOrg) {
 			thunk.result = val;
 			thunk.flag |= PROMISE_FLAG_RESOLVED;
 		}
-		if (thunk.head) nextExec(thunk, $$fire);
-		else if (err) nextExec(thunk, $$checkUnhandledRejection);
+		if (thunk.head || err) nextExec(thunk, $$fire);
 	} // $$callback
 
 	// $$fire
@@ -228,7 +226,7 @@ void function (PromiseOrg) {
 		else var val = thunk.result;
 		var bomb, handled = false;
 		while (bomb = thunk.head) {
-			handled = true;
+			if (bomb.cb || bomb.rej) handled = true;
 			thunk.head = bomb.chain;
 			bomb.chain = undefined;
 			if (!thunk.head) thunk.tail = undefined;
@@ -239,7 +237,7 @@ void function (PromiseOrg) {
 		if (handled && (thunk.flag & PROMISE_FLAG_UNHANDLED_REJECTION) &&
 			!(thunk.flag & PROMISE_FLAG_HANDLED))
 			$$rejectionHandled(thunk);
-		thunk.flag |= PROMISE_FLAG_HANDLED;
+		if (handled) thunk.flag |= PROMISE_FLAG_HANDLED;
 
 		if (thunk.flag & PROMISE_FLAG_REJECTED)
 			nextExec(thunk, $$checkUnhandledRejection);
@@ -315,17 +313,17 @@ void function (PromiseOrg) {
 		}
 	} // makeArrayFromIterator
 
-	function PromiseLightSolved(flag, result) {
+	function PromiseSolved(flag, result) {
 		var thunk = this;
 		thunk.flag = flag;
 		thunk.tail = thunk.head = undefined;
 		thunk.result = result;
 		if (flag & PROMISE_FLAG_REJECTED) nextExec(thunk, $$fire);
 		return thunk;
-	} // PromiseLightSolved
-	PromiseLightSolved.prototype = Promise.prototype;
+	} // PromiseSolved
+	PromiseSolved.prototype = Promise.prototype;
 
-	function PromiseLightNext(parent, reject, resolve, cb) {
+	function PromiseNext(parent, reject, resolve, cb) {
 		var thunk = this;
 		thunk.flag = 0;
 		thunk.tail = thunk.head = undefined;
@@ -336,20 +334,20 @@ void function (PromiseOrg) {
 		if (parent.flag & PROMISE_FLAG_SOLVED) nextExec(parent, $$fire);
 
 		return thunk;
-	} // PromiseLightNext
-	PromiseLightNext.prototype = Promise.prototype;
+	} // PromiseNext
+	PromiseNext.prototype = Promise.prototype;
 
-	function PromiseLightDefer() {
+	function PromiseDefer() {
 		var thunk = this;
 		thunk.flag = 0;
 		thunk.tail = thunk.head = undefined;
 		thunk.result = undefined;
-		return {promise: thunk, resolve: resolve, reject: reject};
+		return {promise:thunk, resolve:resolve, reject:reject};
 
 		function resolve(val) { return $$resolve(thunk, val); }
 		function reject(err)  { return $$reject(thunk, err); }
-	} // PromiseLightDefer
-	PromiseLightDefer.prototype = Promise.prototype;
+	} // PromiseDefer
+	PromiseDefer.prototype = Promise.prototype;
 
 
 	/*
