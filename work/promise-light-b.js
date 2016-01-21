@@ -223,13 +223,19 @@ void function (PromiseOrg) {
 
 			fire(thunk, thunk.result, bomb.rej, bomb.res, bomb.cb);
 		}
-		if (thunk.flag & PROMISE_FLAG_REJECTED) nextExec(thunk, $$checkUnhandledRejection);
+
+		if ((thunk.flag & PROMISE_FLAG_UNHANDLED_REJECTION) &&
+			!(thunk.flag & PROMISE_FLAG_HANDLED))
+			$$rejectionHandled(thunk);
+		thunk.flag |= PROMISE_FLAG_HANDLED;
+
+		if (thunk.flag & PROMISE_FLAG_REJECTED)
+			nextExec(thunk, $$checkUnhandledRejection);
 	} // $$fire
 
 	function fire(thunk, result, rej, res, cb) {
-		var err, val;
-		if (thunk.flag & PROMISE_FLAG_REJECTED) err = result;
-		else val = result;
+		if (thunk.flag & PROMISE_FLAG_REJECTED) var err = result;
+		else var val = result;
 		try {
 			var r = cb ? cb(err, val) :
 				err ? (rej ? rej(err) : err) :
@@ -241,11 +247,6 @@ void function (PromiseOrg) {
 				r(function (e, v) { return $$callback(thunk, e, v); });
 			else if (r instanceof Error) $$reject(thunk, r);
 			else $$resolve(thunk, r);
-
-			if ((thunk.flag & PROMISE_FLAG_UNHANDLED_REJECTION) &&
-				!(thunk.flag & PROMISE_FLAG_HANDLED))
-				$$rejectionHandled(thunk);
-			thunk.flag |= PROMISE_FLAG_HANDLED;
 		} catch (e) { $$reject(thunk, e); }
 	} // fire
 
@@ -283,7 +284,7 @@ void function (PromiseOrg) {
 	// isIterable(iter)
 	function isIterable(iter) {
 		return !!iter && typeof Symbol === 'function' &&
-					!!Symbol.iterator && typeof iter[Symbol.iterator] === 'function';
+			!!Symbol.iterator && typeof iter[Symbol.iterator] === 'function';
 	}
 
 	// makeArrayFromIterator(iter or array)

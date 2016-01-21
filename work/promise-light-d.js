@@ -255,7 +255,7 @@ void function (PromiseOrg) {
 	// isIterable(iter)
 	function isIterable(iter) {
 		return !!iter && typeof Symbol === 'function' &&
-					!!Symbol.iterator && typeof iter[Symbol.iterator] === 'function';
+			!!Symbol.iterator && typeof iter[Symbol.iterator] === 'function';
 	}
 
 	// makeArrayFromIterator(iter or array)
