@@ -226,7 +226,7 @@ void function (PromiseOrg) {
 			bomb.chain = undefined;
 			if (!thunk.head) thunk.tail = undefined;
 
-			fire(thunk, err, val, bomb.rej, bomb.res, bomb.cb);
+			fire(bomb.thunk, err, val, bomb.rej, bomb.res, bomb.cb);
 		}
 
 		if (handled && (thunk.flag & PROMISE_FLAG_UNHANDLED_REJECTION) &&
@@ -330,7 +330,7 @@ void function (PromiseOrg) {
 		thunk.tail = thunk.head = undefined;
 		thunk.result = undefined;
 
-		var bomb = {rej:reject, res:resolve, cb:cb, chain:undefined};
+		var bomb = {rej:reject, res:resolve, cb:cb, thunk:thunk, chain:undefined};
 		parent.tail = parent.tail ? (parent.tail.chain = bomb) : (parent.head = bomb);
 		if (parent.flag & PROMISE_FLAG_SOLVED) nextExec(parent, $$fire);
 
@@ -347,7 +347,7 @@ void function (PromiseOrg) {
 		thunk.flag = 0;
 		thunk.tail = thunk.head = undefined;
 		thunk.result = undefined;
-		return {promise: thunk, resolve: resolve, reject: reject};
+		return {promise:thunk, resolve:resolve, reject:reject};
 
 		function thunk(cb)    { return $$thunk(thunk, cb); }
 		function resolve(val) { return $$resolve(thunk, val); }
