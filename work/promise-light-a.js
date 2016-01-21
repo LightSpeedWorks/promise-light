@@ -58,9 +58,10 @@ void function (PromiseOrg) {
 	// Promise
 	var Promise = extend({
 		constructor: function Promise(setup) {
-			//if (!(this instanceof Promise))
-			//	throw new Error('new Promise!!!');
+			if (!(this instanceof Promise))
+				throw new TypeError('new Promise!!!');
 
+			thunk.constructor = Promise;
 			thunk.then     = then;
 			thunk['catch'] = caught;
 			thunk.toString = toString;
@@ -93,8 +94,6 @@ void function (PromiseOrg) {
 		defer: function defer() {
 			return new PromiseLightDefer();
 		}, // defer
-
-		isPromise: isPromise,
 
 		// Promise.all([p, ...])
 		all: function all(promises) {
@@ -134,6 +133,11 @@ void function (PromiseOrg) {
 			); // return new Promise
 		}, // race
 
+		isIterable: isIterable,
+		isIterator: isIterator,
+		isPromise: isPromise,
+		makeArrayFromIterator: makeArrayFromIterator,
+
 		resolve: resolve,
 		reject: reject,
 		accept: resolve
@@ -141,6 +145,7 @@ void function (PromiseOrg) {
 
 	// Promise.resolve
 	function resolve(val) {
+		if (val && val.then) return val;
 		return new PromiseLightSolved(PROMISE_FLAG_RESOLVED, val);
 	}
 
@@ -176,6 +181,12 @@ void function (PromiseOrg) {
 		//	console.log('resolved after rejected:', val, thunk.args[0]) :
 		//	console.log('resolved twice:', val, thunk.args[1]);
 		//thunk.args = [null, arguments.length <= 2 ? val : slice.call(arguments, 1)];
+
+		if (val && val.then)
+			return val.then(
+				function (v) { return $$resolve(thunk, v); },
+				function (e) { return $$reject(thunk, e); });
+
 		thunk.result = val;
 		thunk.flag |= PROMISE_FLAG_RESOLVED;
 		if (thunk.head) nextExec(thunk, $$fire);
@@ -309,6 +320,7 @@ void function (PromiseOrg) {
 	} // makeArrayFromIterator
 
 	function PromiseLightSolved(flag, result) {
+		thunk.constructor = Promise;
 		thunk.then     = then;
 		thunk['catch'] = caught;
 		thunk.toString = toString;
@@ -323,6 +335,7 @@ void function (PromiseOrg) {
 	PromiseLightSolved.prototype = Promise.prototype;
 
 	function PromiseLightNext(parent, reject, resolve, cb) {
+		thunk.constructor = Promise;
 		thunk.then     = then;
 		thunk['catch'] = caught;
 		thunk.toString = toString;
@@ -341,6 +354,7 @@ void function (PromiseOrg) {
 	PromiseLightNext.prototype = Promise.prototype;
 
 	function PromiseLightDefer() {
+		thunk.constructor = Promise;
 		thunk.then     = then;
 		thunk['catch'] = caught;
 		thunk.toString = toString;

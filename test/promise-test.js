@@ -518,6 +518,7 @@ void function ($module, $print, assert, describe, it,
 				var keys = Object.keys(Promise).sort().join(',');
 				assert(keys === 'all,race,reject,resolve' ||
 							 keys === 'accept,all,defer,race,reject,resolve' ||
+							 keys === 'accept,all,create,defer,extend,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve' ||
 							 keys === '_asap,_setAsap,_setScheduler,all,race,reject,resolve' || // es6-promise
 							 keys === '', 'Promise keys not match: keys = ' + keys);
 			}) // it Promise keys
@@ -533,8 +534,9 @@ void function ($module, $print, assert, describe, it,
 				var keys = Object.getOwnPropertyNames(Promise).filter(f).sort().join(',');
 				assert(keys === 'accept,all,defer,race,reject,resolve' ||
 					keys === 'Promise,PromiseThunk,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,promisify,promisifyAll,race,reject,resolve,thunkify,thunkifyAll,wrap' ||
-					keys === 'accept,all,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve' ||
 					keys === 'Promise,PromiseLight,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve,thunkify,wrap' ||
+					keys === 'accept,all,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve' ||
+					keys === 'accept,all,create,defer,extend,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve' ||
 					keys === '_asap,_setAsap,_setScheduler,all,race,reject,resolve' || // es6-promise
 					keys === 'all,race,reject,resolve',
 					'Promise own property names match: keys = ' + keys);
