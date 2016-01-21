@@ -1,6 +1,6 @@
-// PromiseLight
+// Promise
 
-this.PromiseLight = function () {
+void function (PromiseOrg) {
 	'use strict';
 
 	var slice = [].slice;
@@ -54,11 +54,11 @@ this.PromiseLight = function () {
 	var PROMISE_FLAG_UNHANDLED_REJECTION = 8;
 
 
-	// PromiseLight
-	var PromiseLight = extend({
-		constructor: function PromiseLight(setup) {
-			//if (!(this instanceof PromiseLight))
-			//	throw new Error('new PromiseLight!!!');
+	// Promise
+	var Promise = extend({
+		constructor: function Promise(setup) {
+			//if (!(this instanceof Promise))
+			//	throw new Error('new Promise!!!');
 
 			thunk.then     = then;
 			thunk['catch'] = caught;
@@ -75,32 +75,32 @@ this.PromiseLight = function () {
 			function thunk(cb)    { return $$thunk(thunk, cb); }
 			function resolve(val) { return $$resolve(thunk, val); }
 			function reject(err)  { return $$reject(thunk, err); }
-		}, // PromiseLight
+		}, // Promise
 
-		// PromiseLight#then
+		// Promise#then
 		then: then,
 
-		// PromiseLight#catch
+		// Promise#catch
 		'catch': caught, // catch
 
-		// PromiseLight#toString
+		// Promise#toString
 		toString: toString
 	},
 
 	{ // statics
-		// PromiseLight.defer
+		// Promise.defer
 		defer: function defer() {
 			return new PromiseLightDefer();
 		}, // defer
 
 		isPromise: isPromise,
 
-		// PromiseLight.all
+		// Promise.all
 		all: function all(promises) {
-			//if (isIterator(promises)) promises = makeArrayFromIterator(promises);
+			if (isIterator(promises)) promises = makeArrayFromIterator(promises);
 			if (!(promises instanceof Array))
 				throw new TypeError('promises must be an array');
-			return new PromiseLight(
+			return new Promise(
 				function promiseAll(resolve, reject) {
 					var n = promises.length;
 					if (n === 0) return resolve([]);
@@ -108,7 +108,7 @@ this.PromiseLight = function () {
 					promises.forEach(function (p, i) {
 						function complete(val) {
 							res[i] = val; if (--n === 0) resolve(res); }
-						if (p && p.then) //if (p instanceof PromiseLight || isPromise(p))
+						if (p && p.then) //if (p instanceof Promise || isPromise(p))
 							return p.then(complete, reject);
 						complete(p);
 					}); // promises.forEach
@@ -116,26 +116,51 @@ this.PromiseLight = function () {
 			); // return new Promise
 		}, // all
 
-		//PromiseLight.resolve
-		resolve: function resolve(val) {
-			return new PromiseLightSolved(PROMISE_FLAG_RESOLVED, val);
-		},
-		//PromiseLight.reject
-		reject: function reject(err) {
-			return new PromiseLightSolved(PROMISE_FLAG_REJECTED, err);
-		}
-	}); // PromiseLight
+		// Promise.race([p, ...])
+		race: function race(promises) {
+			if (isIterator(promises)) promises = makeArrayFromIterator(promises);
+			if (!(promises instanceof Array))
+				throw new TypeError('promises must be an array');
 
-	function toString() {
-		return 'PromLit { ' + JSON.stringify(this.result) + ' }';
+			return new Promise(
+				function promiseRace(resolve, reject) {
+					promises.forEach(function (p) {
+						if (p instanceof Promise || isPromise(p))
+							return p.then(resolve, reject);
+						resolve(p);
+					}); // promises.forEach
+				}
+			); // return new Promise
+		}, // race
+
+		resolve: resolve,
+		reject: reject,
+		accept: resolve
+	}); // Promise
+
+	//Promise.resolve
+	function resolve(val) {
+		return new PromiseLightSolved(PROMISE_FLAG_RESOLVED, val);
 	}
 
+	//Promise.reject
+	function reject(err) {
+		return new PromiseLightSolved(PROMISE_FLAG_REJECTED, err);
+	}
+
+	// Promise#toString()
+	function toString() {
+		return 'PromiseLight { ' + JSON.stringify(this.result) + ' }';
+	}
+
+	// Promise#then(resolve, reject)
 	function then(resolve, reject) {
 		var p = new PromiseLightNext(this, reject, resolve, undefined);
 		if (this.flag & PROMISE_FLAG_SOLVED) nextExec(this, $$fire);
 		return p;
 	}
 
+	// Promise#catch(reject)
 	function caught(reject) {
 		var p = new PromiseLightNext(this, reject, undefined, undefined);
 		if (this.flag & PROMISE_FLAG_SOLVED) nextExec(this, $$fire);
@@ -248,9 +273,39 @@ this.PromiseLight = function () {
 		console.log('UNHANDLED REJECTION HANDLED!?');
 	} // rejectionHandled
 
+	// isPromise(p)
 	function isPromise(p) {
-		return p instanceof PromiseLight || p instanceof Promise || (!!p && p.then);
+		return p instanceof Promise || p instanceof PromiseOrg || (!!p && p.then);
 	}
+
+	// isIterator(iter)
+	function isIterator(iter) {
+		return !!iter && (typeof iter.next === 'function' || isIterable(iter));
+	}
+
+	// isIterable(iter)
+	function isIterable(iter) {
+		return !!iter && typeof Symbol === 'function' &&
+					!!Symbol.iterator && typeof iter[Symbol.iterator] === 'function';
+	}
+
+	// makeArrayFromIterator(iter or array)
+	function makeArrayFromIterator(iter) {
+		if (iter instanceof Array) return iter;
+		if (!isIterator(iter)) return [iter];
+		if (isIterable(iter)) iter = iter[Symbol.iterator]();
+		var array = [];
+		try {
+			for (;;) {
+				var val = iter.next();
+				if (val && val.hasOwnProperty('done') && val.done) return array;
+				if (val && val.hasOwnProperty('value')) val = val.value;
+				array.push(val);
+			}
+		} catch (error) {
+			return array;
+		}
+	} // makeArrayFromIterator
 
 	function PromiseLightSolved(flag, result) {
 		thunk.then     = then;
@@ -264,7 +319,7 @@ this.PromiseLight = function () {
 
 		function thunk(cb)    { return $$thunk(thunk, cb); }
 	} // PromiseLightSolved
-	PromiseLightSolved.prototype = PromiseLight.prototype;
+	PromiseLightSolved.prototype = Promise.prototype;
 
 	function PromiseLightNext(parent, reject, resolve, cb) {
 		thunk.then     = then;
@@ -281,7 +336,7 @@ this.PromiseLight = function () {
 
 		function thunk(cb)    { return $$thunk(thunk, cb); }
 	} // PromiseLightNext
-	PromiseLightNext.prototype = PromiseLight.prototype;
+	PromiseLightNext.prototype = Promise.prototype;
 
 	function PromiseLightDefer() {
 		thunk.then     = then;
@@ -296,15 +351,15 @@ this.PromiseLight = function () {
 		function resolve(val) { return $$resolve(thunk, val); }
 		function reject(err)  { return $$reject(thunk, err); }
 	} // PromiseLightDefer
-	PromiseLightDefer.prototype = PromiseLight.prototype;
+	PromiseLightDefer.prototype = Promise.prototype;
 
 
 	/*
-	var p1 = PromiseLight.reject(new Error);
+	var p1 = Promise.reject(new Error);
 	setTimeout(function () {
 		p1.catch(function () {});
 	}, 1);
-	var p2 = PromiseLight.reject(new Error).then(function () {});
+	var p2 = Promise.reject(new Error).then(function () {});
 	setTimeout(function () {
 		p2.catch(function () {});
 	}, 1);
@@ -312,8 +367,8 @@ this.PromiseLight = function () {
 
 
 	if (typeof module === 'object' && module && module.exports)
-		module.exports = PromiseLight;
+		module.exports = Promise;
 
-	return PromiseLight;
+	return Promise;
 
-}();
+}(typeof Promise === 'function' ? Promise : null);
