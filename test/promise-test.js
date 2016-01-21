@@ -13,7 +13,7 @@ if (typeof process !== 'undefined') {
 }
 
 void function ($module, $print, assert, describe, it,
-		PromiseCore,
+		PromiseCore, PromiseLightA, PromiseLightB,
 		PromiseLight, PromiseLight4, PromiseLight6, PromiseLight8) {
 	'use strict';
 
@@ -32,6 +32,8 @@ void function ($module, $print, assert, describe, it,
 		'promise-light8': PromiseLight8,
 		'promise-light': PromiseLight,
 		'promise-core': PromiseCore,
+		'promise-light-b': PromiseLightB,
+		'promise-light-a': PromiseLightA,
 		'promise-thunk': PromiseThunk
 	};
 
@@ -622,6 +624,8 @@ void function ($module, $print, assert, describe, it,
 		typeof describe === 'function' ? describe : require('../lib/describe-it'),
 		typeof it === 'function' ? it : require('../lib/describe-it').it,
 		typeof PromiseCore === 'function' ? PromiseCore : require('../work/promise-core'),
+		typeof PromiseLightA === 'function' ? PromiseLightA : require('../work/promise-light-a'),
+		typeof PromiseLightB === 'function' ? PromiseLightB : require('../work/promise-light-b'),
 		typeof PromiseLight === 'function' ? PromiseLight : require('../promise-light'),
 		typeof PromiseLight4 === 'function' ? PromiseLight4 : require('../work/promise-light4'),
 		typeof PromiseLight6 === 'function' ? PromiseLight6 : require('../work/promise-light6'),
