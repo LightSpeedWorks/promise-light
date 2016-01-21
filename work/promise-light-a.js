@@ -35,6 +35,7 @@ void function (PromiseOrg) {
 			var task;
 			while (task = tasks.head) {
 				tasks.head = task.chain;
+				task.chain = undefined;
 				if (!tasks.head) tasks.tail = undefined;
 
 				var fn = task.fn;
@@ -67,7 +68,7 @@ void function (PromiseOrg) {
 			thunk.tail = thunk.head = undefined;
 			thunk.result = undefined;
 
-			try{ setup(resolve, reject); }
+			try { setup(resolve, reject); }
 			catch (err) { reject(err); }
 
 			return thunk;
@@ -138,12 +139,12 @@ void function (PromiseOrg) {
 		accept: resolve
 	}); // Promise
 
-	//Promise.resolve
+	// Promise.resolve
 	function resolve(val) {
 		return new PromiseLightSolved(PROMISE_FLAG_RESOLVED, val);
 	}
 
-	//Promise.reject
+	// Promise.reject
 	function reject(err) {
 		return new PromiseLightSolved(PROMISE_FLAG_REJECTED, err);
 	}
@@ -155,27 +156,22 @@ void function (PromiseOrg) {
 
 	// Promise#then(resolve, reject)
 	function then(resolve, reject) {
-		var p = new PromiseLightNext(this, reject, resolve, undefined);
-		if (this.flag & PROMISE_FLAG_SOLVED) nextExec(this, $$fire);
-		return p;
+		return new PromiseLightNext(this, reject, resolve, undefined);
 	}
 
 	// Promise#catch(reject)
 	function caught(reject) {
-		var p = new PromiseLightNext(this, reject, undefined, undefined);
-		if (this.flag & PROMISE_FLAG_SOLVED) nextExec(this, $$fire);
-		return p;
+		return new PromiseLightNext(this, reject, undefined, undefined);
 	}
 
 	// $$thunk
 	function $$thunk(thunk, cb) {
-		var p = new PromiseLightNext(thunk, undefined, undefined, cb);
-		if (thunk.flag & PROMISE_FLAG_SOLVED) nextExec(thunk, $$fire);
-		return p;
-	} // $$thunk
+		return new PromiseLightNext(thunk, undefined, undefined, cb);
+	}
 
 	// $$resolve
 	function $$resolve(thunk, val) {
+		if (thunk.flag & PROMISE_FLAG_SOLVED) return;
 		//if (thunk.args) return thunk.args[0] ?
 		//	console.log('resolved after rejected:', val, thunk.args[0]) :
 		//	console.log('resolved twice:', val, thunk.args[1]);
@@ -187,6 +183,7 @@ void function (PromiseOrg) {
 
 	// $$reject
 	function $$reject(thunk, err) {
+		if (thunk.flag & PROMISE_FLAG_SOLVED) return;
 		//if (thunk.args) return thunk.args[0] ?
 		//	err ? console.log('rejected twice:', err, thunk.args[0]) :
 		//	      console.log('resolved after rejected:', val, thunk.args[0]) :
@@ -200,6 +197,7 @@ void function (PromiseOrg) {
 
 	// $$callback
 	function $$callback(thunk, err, val) {
+		if (thunk.flag & PROMISE_FLAG_SOLVED) return;
 		//if (thunk.args) return thunk.args[0] ?
 		//	err ? console.log('rejected twice:', err, thunk.args[0]) :
 		//	      console.log('resolved after rejected:', val, thunk.args[0]) :
@@ -219,15 +217,19 @@ void function (PromiseOrg) {
 
 	// $$fire
 	function $$fire(thunk) {
-		var bomb;
+		if (thunk.flag & PROMISE_FLAG_REJECTED) var err = thunk.result;
+		else var val = thunk.result;
+		var bomb, handled = false;
 		while (bomb = thunk.head) {
+			handled = true;
 			thunk.head = bomb.chain;
+			bomb.chain = undefined;
 			if (!thunk.head) thunk.tail = undefined;
 
-			fire(thunk, thunk.result, bomb.rej, bomb.res, bomb.cb);
+			fire(thunk, err, val, bomb.rej, bomb.res, bomb.cb);
 		}
 
-		if ((thunk.flag & PROMISE_FLAG_UNHANDLED_REJECTION) &&
+		if (handled && (thunk.flag & PROMISE_FLAG_UNHANDLED_REJECTION) &&
 			!(thunk.flag & PROMISE_FLAG_HANDLED))
 			$$rejectionHandled(thunk);
 		thunk.flag |= PROMISE_FLAG_HANDLED;
@@ -236,9 +238,7 @@ void function (PromiseOrg) {
 			nextExec(thunk, $$checkUnhandledRejection);
 	} // $$fire
 
-	function fire(thunk, result, rej, res, cb) {
-		if (thunk.flag & PROMISE_FLAG_REJECTED) var err = result;
-		else var val = result;
+	function fire(thunk, err, val, rej, res, cb) {
 		try {
 			var r = cb ? cb(err, val) :
 				err ? (rej ? rej(err) : err) :
@@ -332,6 +332,7 @@ void function (PromiseOrg) {
 
 		var bomb = {rej:reject, res:resolve, cb:cb, chain:undefined};
 		parent.tail = parent.tail ? (parent.tail.chain = bomb) : (parent.head = bomb);
+		if (parent.flag & PROMISE_FLAG_SOLVED) nextExec(parent, $$fire);
 
 		return thunk;
 
