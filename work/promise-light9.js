@@ -14,7 +14,7 @@ this.PromiseLight = function () {
 	// PromiseLight
 	var PromiseLight = extend({
 		constructor: function PromiseLight(setup) {
-			if (!(this instanceof Promise))
+			if (!(this instanceof PromiseLight))
 				throw new TypeError('new PromiseLight!!!');
 
 			var thunk = this;
