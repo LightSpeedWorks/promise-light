@@ -35,27 +35,27 @@ void function (PromiseOrg) {
 		function setValue(obj, prop, val) { obj[prop] = val; };
 
 	// getProto(obj)
-	var getProto = Object.getPrototypeOf || {}.__proto__ ?
-		function getProto(obj) { return obj.__proto__; } : null;
+	var getProto = Object.getPrototypeOf ||
+		function getProto(obj) { return obj.__proto__; };
 
-	// setProto
-	var setProto = typeof Object.setPrototypeOf === 'function' ?
-		Object.setPrototypeOf : function (obj, proto) { obj.__proto__ = proto; };
+	// setProto(obj, proto)
+	var setProto = Object.setPrototypeOf ||
+		function (obj, proto) { obj.__proto__ = proto; };
 
-	// extend
+	// BaseClass.extend(proto, statics)
 	function extend(proto, statics) {
-		var base = this || Object;
 		var ctor = proto.constructor;
 		function super_() { setValue(this, 'constructor', ctor); }
-		super_.prototype = base.prototype;
-		ctor.prototype = new super_();
+		if (this) {
+			super_.prototype = this.prototype;
+			ctor.prototype = new super_();
+		}
 		for (var p in proto)
 			if (proto.hasOwnProperty(p) &&
-				ctor.prototype[p] !== proto[p])
+				!ctor.prototype.hasOwnProperty(p))
 				setValue(ctor.prototype, p, proto[p]);
 		for (var p in statics)
-			if (statics.hasOwnProperty(p) &&
-				ctor[p] !== statics[p])
+			if (statics.hasOwnProperty(p))
 				setValue(ctor, p, statics[p]);
 		return ctor;
 	}
@@ -255,11 +255,11 @@ void function (PromiseOrg) {
 	// $$reject
 	function $$reject(thunk, err) {
 		if (thunk.flag & PROMISE_FLAG_RESOLVED)
-			return console.error(thunk + '\n' + colors.purple(
-				'Resolved promise rejected: ' + errmsg(err)));
+			return console.error(colors.yellow('* Resolved promise rejected: ') +
+				thunk + '\n' + colors.purple('* ' + errmsg(err)));
 		if (thunk.flag & PROMISE_FLAG_REJECTED)
-			return console.error(thunk + '\n' + colors.purple(
-				'Rejected twice: ' + errmsg(err)));
+			return console.error(colors.yellow('* Rejected promise rejected: ') +
+				thunk + '\n' + colors.purple('* ' + errmsg(err)));
 
 		thunk.result = err;
 		thunk.flag |= PROMISE_FLAG_REJECTED;
@@ -270,11 +270,11 @@ void function (PromiseOrg) {
 	function $$callback(thunk, err, val) {
 		if (err) {
 			if (thunk.flag & PROMISE_FLAG_RESOLVED)
-				return console.error(thunk + '\n' + colors.purple(
-					'Resolved promise rejected: ' + errmsg(err)));
+				return console.error(colors.yellow('* Resolved promise rejected: ') +
+					thunk + '\n' + colors.purple('* ' + errmsg(err)));
 			if (thunk.flag & PROMISE_FLAG_REJECTED)
-				return console.error(thunk + '\n' + colors.purple(
-					'Rejected twice: ' + errmsg(err)));
+				return console.error(colors.yellow('* Rejected promise rejected: ') +
+					thunk + '\n' + colors.purple('* ' + errmsg(err)));
 
 			thunk.result = err;
 			thunk.flag |= PROMISE_FLAG_REJECTED;
@@ -340,14 +340,15 @@ void function (PromiseOrg) {
 	// $$unhandledRejection
 	function $$unhandledRejection(thunk) {
 		process.emit('unhandledRejection', thunk.result, thunk);
-		console.error(colors.yellow('* UnhandledRejection: ') + thunk + colors.purple('\n* ' + errmsg(thunk.result)));
-	} // unhandledRejection
+		console.error(colors.yellow('* UnhandledRejection: ') + thunk +
+			colors.purple('\n* ' + errmsg(thunk.result)));
+	}
 
 	// $$rejectionHandled
 	function $$rejectionHandled(thunk) {
 		process.emit('rejectionHandled', thunk);
-		console.error(colors.yellow('* RejectionHandled:   ') + thunk); // + colors.purple('\n* ' + errmsg(new Error)));
-	} // rejectionHandled
+		console.error(colors.green('* RejectionHandled:   ') + thunk);
+	}
 
 	// Promise.all([p, ...])
 	function all(promises) {
