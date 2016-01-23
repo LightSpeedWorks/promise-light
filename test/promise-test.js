@@ -1,3 +1,5 @@
+// promise-test.js
+
 function errmsg(err) {
 	var msg = err.stack || err + '';
 	return msg.split('\n').filter(function (s) { return !s.match(/mocha/); }).join('\n');
@@ -10,10 +12,10 @@ function p2str(p) {
 
 if (typeof process !== 'undefined') {
 	process.on('unhandledRejection', function (err, p) {
-		console.error('\x1b[1;33m* UnhandledRejection:\x1b[36m', p2str(p), '\x1b[35m\n*', errmsg(err), '\x1b[m');
+		console.error('\x1b[33m* UnhandledRejection:\x1b[36m', p2str(p), '\x1b[35m\n*', errmsg(err), '\x1b[m');
 	});
 	process.on('rejectionHandled', function (p) {
-		console.error('\x1b[1;33m* RejectionHandled:\x1b[36m  ', p2str(p), '\x1b[35m\n*', errmsg(new Error), '\x1b[m');
+		console.error('\x1b[32m* RejectionHandled:\x1b[36m  ', p2str(p), '\x1b[m');
 	});
 }
 
