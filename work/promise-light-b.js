@@ -46,20 +46,17 @@ void function (PromiseOrg) {
 	function extend(proto, statics) {
 		var base = this || Object;
 		var ctor = proto.constructor;
-		function super_() {
-			setValue(this, 'constructor', ctor);
-			// this.constructor = ctor;
-		}
+		function super_() { setValue(this, 'constructor', ctor); }
 		super_.prototype = base.prototype;
 		ctor.prototype = new super_();
 		for (var p in proto)
-			if (proto.hasOwnProperty(p))
+			if (proto.hasOwnProperty(p) &&
+				ctor.prototype[p] !== proto[p])
 				setValue(ctor.prototype, p, proto[p]);
-				// ctor.prototype[p] = proto[p];
 		for (var p in statics)
-			if (statics.hasOwnProperty(p))
+			if (statics.hasOwnProperty(p) &&
+				ctor[p] !== statics[p])
 				setValue(ctor, p, statics[p]);
-				// ctor[p] = statics[p];
 		return ctor;
 	}
 
