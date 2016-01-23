@@ -46,10 +46,9 @@ void function (PromiseOrg) {
 	function extend(proto, statics) {
 		var ctor = proto.constructor;
 		function super_() { setValue(this, 'constructor', ctor); }
-		if (this) {
-			super_.prototype = this.prototype;
+		if (typeof this === 'function')
+			super_.prototype = this.prototype,
 			ctor.prototype = new super_();
-		}
 		for (var p in proto)
 			if (proto.hasOwnProperty(p) &&
 				!ctor.prototype.hasOwnProperty(p))
@@ -105,6 +104,7 @@ void function (PromiseOrg) {
 	var PROMISE_FLAG_SOLVED = PROMISE_FLAG_RESOLVED | PROMISE_FLAG_REJECTED;
 	var PROMISE_FLAG_HANDLED = 4;
 	var PROMISE_FLAG_UNHANDLED_REJECTION = 8;
+	var PROMISE_FLAG_UNHANDLED = PROMISE_FLAG_HANDLED | PROMISE_FLAG_UNHANDLED_REJECTION;
 
 
 	// Promise
@@ -252,8 +252,8 @@ void function (PromiseOrg) {
 	function toJSON() {
 		var obj = {'class': 'PromiseThunk'};
 		obj.state = ['pending', 'resolved', 'rejected'][this.flag & PROMISE_FLAG_SOLVED];
-		if (this.$state === STATE_RESOLVED) obj.value = this.result;
-		if (this.$state === STATE_REJECTED) obj.error = '' + this.result;
+		if (this.flag & PROMISE_FLAG_RESOLVED) obj.value = this.result;
+		if (this.flag & PROMISE_FLAG_REJECTED) obj.error = this.result;
 		return obj;
 	}
 
@@ -275,10 +275,6 @@ void function (PromiseOrg) {
 	// $$resolve
 	function $$resolve(thunk, val) {
 		if (thunk.flag & PROMISE_FLAG_SOLVED) return;
-		// if (thunk.flag & PROMISE_FLAG_RESOLVED)
-		//	return console.error('resolved twice:', val, thunk.result);
-		// if (thunk.flag & PROMISE_FLAG_REJECTED)
-		//	return console.error('resolved after rejected:', val, thunk.result);
 
 		if (val && val.then)
 			return val.then(
@@ -341,8 +337,8 @@ void function (PromiseOrg) {
 
 			fire(bomb.thunk, err, val, bomb.rej, bomb.res);
 
-			if (thunk.flag & PROMISE_FLAG_UNHANDLED_REJECTION &&
-					!(thunk.flag & PROMISE_FLAG_HANDLED))
+			if ((thunk.flag & PROMISE_FLAG_UNHANDLED) ===
+					PROMISE_FLAG_UNHANDLED_REJECTION)
 				$$rejectionHandled(thunk);
 			thunk.flag |= PROMISE_FLAG_HANDLED;
 		}
