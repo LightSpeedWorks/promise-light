@@ -224,13 +224,35 @@ void function (PromiseOrg) {
 	} // PromiseDefer
 	PromiseDefer.prototype = Promise.prototype;
 
-	// Promise.resolve
+	function PromiseConvert(thenable) {
+		thunk.constructor = Promise;
+		thunk.then        = then;
+		thunk['catch']    = caught;
+		thunk.toString    = toString;
+		thunk.toJSON      = toJSON;
+
+		thunk.flag = 0;
+		thunk.result = undefined;
+		thunk.tail = thunk.head = undefined;
+
+		thenable.then(resolve, reject);
+
+		return thunk;
+
+		function thunk(cb)    { return $$thunk(thunk, cb); }
+		function resolve(val) { return $$resolve(thunk, val); }
+		function reject(err)  { return $$reject(thunk, err); }
+	} // PromiseConvert
+	PromiseConvert.prototype = Promise.prototype;
+
+	// Promise.resolve(val)
 	function resolve(val) {
-		if (val && typeof val.then === 'function') return val;
+		if (val && typeof val.then === 'function')
+			return new PromiseConvert(val);
 		return new PromiseResolved(PROMISE_FLAG_RESOLVED, val);
 	}
 
-	// Promise.reject
+	// Promise.reject(err)
 	function reject(err) {
 		return new PromiseRejected(PROMISE_FLAG_REJECTED, err);
 	}
