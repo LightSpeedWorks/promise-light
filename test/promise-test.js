@@ -3,12 +3,17 @@ function errmsg(err) {
 	return msg.split('\n').filter(function (s) { return !s.match(/mocha/); }).join('\n');
 }
 
+function p2str(p) {
+	var s = p + '';
+	return s.substr(0, 8) === '[object ' ? p : s;
+}
+
 if (typeof process !== 'undefined') {
 	process.on('unhandledRejection', function (err, p) {
-		console.log('\x1b[1;33m* UnhandledRejection:\x1b[36m', p, '\x1b[35m\n*', errmsg(err), '\x1b[m');
+		console.error('\x1b[1;33m* UnhandledRejection:\x1b[36m', p2str(p), '\x1b[35m\n*', errmsg(err), '\x1b[m');
 	});
 	process.on('rejectionHandled', function (p) {
-		console.log('\x1b[1;33m* RejectionHandled:\x1b[36m  ', p, '\x1b[35m\n*', errmsg(new Error), '\x1b[m');
+		console.error('\x1b[1;33m* RejectionHandled:\x1b[36m  ', p2str(p), '\x1b[35m\n*', errmsg(new Error), '\x1b[m');
 	});
 }
 
@@ -518,7 +523,6 @@ void function ($module, $print, assert, describe, it,
 				var keys = Object.keys(Promise).sort().join(',');
 				assert(keys === 'all,race,reject,resolve' ||
 							 keys === 'accept,all,defer,race,reject,resolve' ||
-							 keys === 'accept,all,create,defer,extend,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve' ||
 							 keys === '_asap,_setAsap,_setScheduler,all,race,reject,resolve' || // es6-promise
 							 keys === '', 'Promise keys not match: keys = ' + keys);
 			}) // it Promise keys
@@ -536,7 +540,6 @@ void function ($module, $print, assert, describe, it,
 					keys === 'Promise,PromiseThunk,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,promisify,promisifyAll,race,reject,resolve,thunkify,thunkifyAll,wrap' ||
 					keys === 'Promise,PromiseLight,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve,thunkify,wrap' ||
 					keys === 'accept,all,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve' ||
-					keys === 'accept,all,create,defer,extend,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve' ||
 					keys === '_asap,_setAsap,_setScheduler,all,race,reject,resolve' || // es6-promise
 					keys === 'all,race,reject,resolve',
 					'Promise own property names match: keys = ' + keys);
