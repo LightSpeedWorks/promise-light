@@ -3,7 +3,7 @@
 void function (PromiseOrg) {
 	'use strict';
 
-	var COLORS = {red: '31;1', green: '32;1', purple: '35;1', cyan: '36;1', yellow: '33;1'};
+	var COLORS = {red: '31', green: '32', purple: '35', cyan: '36', yellow: '33'};
 	var colors = Object.keys(COLORS).reduce(function (obj, k) {
 		obj[k] = typeof window === 'object' ? function (x) { return x; } :
 			function (x) { return '\x1b[' + COLORS[k] + 'm' + x + '\x1b[m'; };
@@ -107,7 +107,7 @@ void function (PromiseOrg) {
 	var PROMISE_FLAG_UNHANDLED = PROMISE_FLAG_HANDLED | PROMISE_FLAG_UNHANDLED_REJECTION;
 
 
-	// Promise
+	// new Promise(function setup(resolve, reject) {})
 	var Promise = extend({
 		constructor: function Promise(setup) {
 			if (!(this instanceof Promise))
@@ -152,15 +152,16 @@ void function (PromiseOrg) {
 		makeArrayFromIterator: makeArrayFromIterator
 	}); // Promise
 
-	function PromiseResolved(flag, result) {
+	// new PromiseResolved(val)
+	function PromiseResolved(val) {
 		thunk.constructor = Promise;
 		thunk.then        = then;
 		thunk['catch']    = caught;
 		thunk.toString    = toString;
 		thunk.toJSON      = toJSON;
 
-		thunk.flag = flag;
-		thunk.result = result;
+		thunk.flag = PROMISE_FLAG_RESOLVED;
+		thunk.result = val;
 		thunk.tail = thunk.head = undefined;
 		return thunk;
 
@@ -168,17 +169,18 @@ void function (PromiseOrg) {
 	} // PromiseResolved
 	PromiseResolved.prototype = Promise.prototype;
 
-	function PromiseRejected(flag, result) {
+	// new PromiseRejected(err)
+	function PromiseRejected(err) {
 		thunk.constructor = Promise;
 		thunk.then        = then;
 		thunk['catch']    = caught;
 		thunk.toString    = toString;
 		thunk.toJSON      = toJSON;
 
-		thunk.flag = flag;
-		thunk.result = result;
+		thunk.flag = PROMISE_FLAG_REJECTED;
+		thunk.result = err;
 		thunk.tail = thunk.head = undefined;
-		if (flag & PROMISE_FLAG_REJECTED) nextExec(thunk, $$fire);
+		nextExec(thunk, $$fire);
 		return thunk;
 
 		function thunk(cb)    { return $$thunk(thunk, cb); }
@@ -249,12 +251,12 @@ void function (PromiseOrg) {
 	function resolve(val) {
 		if (val && typeof val.then === 'function')
 			return new PromiseConvert(val);
-		return new PromiseResolved(PROMISE_FLAG_RESOLVED, val);
+		return new PromiseResolved(val);
 	}
 
 	// Promise.reject(err)
 	function reject(err) {
-		return new PromiseRejected(PROMISE_FLAG_REJECTED, err);
+		return new PromiseRejected(err);
 	}
 
 	// Promise.defer()
@@ -265,8 +267,8 @@ void function (PromiseOrg) {
 	// Promise#toString()
 	function toString() {
 		return colors.cyan('PromiseThunk { ') + (
-			this.flag & PROMISE_FLAG_RESOLVED ? colors.green('<resolved ' + this.result + '>') :
-			this.flag & PROMISE_FLAG_REJECTED ? colors.red('<rejected ' + this.result + '>') :
+			this.flag & PROMISE_FLAG_RESOLVED ? colors.green(this.result) :
+			this.flag & PROMISE_FLAG_REJECTED ? colors.red('<rejected> [' + this.result + ']') :
 			colors.yellow('<pending>')) + colors.cyan(' }');
 	}
 
@@ -289,26 +291,26 @@ void function (PromiseOrg) {
 		return new PromiseNext(this, reject, undefined, undefined);
 	}
 
-	// $$thunk
+	// $$thunk(thunk, cb)
 	function $$thunk(thunk, cb) {
 		return new PromiseNext(thunk, undefined, undefined, cb);
 	}
 
-	// $$resolve
+	// $$resolve(thunk, val
 	function $$resolve(thunk, val) {
 		if (thunk.flag & PROMISE_FLAG_SOLVED) return;
 
-		if (val && val.then)
+		if (val && typeof val.then === 'function')
 			return val.then(
 				function (v) { return $$resolve(thunk, v); },
 				function (e) { return $$reject(thunk, e); });
 
 		thunk.result = val;
-		thunk.flag |= PROMISE_FLAG_RESOLVED;
+		thunk.flag = PROMISE_FLAG_RESOLVED;
 		if (thunk.head) nextExec(thunk, $$fire);
 	} // $$resolve
 
-	// $$reject
+	// $$reject(thunk, err)
 	function $$reject(thunk, err) {
 		if (thunk.flag & PROMISE_FLAG_RESOLVED)
 			return console.error(colors.yellow('* Resolved promise rejected: ') +
@@ -318,33 +320,16 @@ void function (PromiseOrg) {
 				thunk + '\n' + colors.purple('* ' + errmsg(err)));
 
 		thunk.result = err;
-		thunk.flag |= PROMISE_FLAG_REJECTED;
+		thunk.flag = PROMISE_FLAG_REJECTED;
 		nextExec(thunk, $$fire);
 	} // $$reject
 
-	// $$callback
+	// $$callback(thunk, err, val)
 	function $$callback(thunk, err, val) {
-		if (err) {
-			if (thunk.flag & PROMISE_FLAG_RESOLVED)
-				return console.error(colors.yellow('* Resolved promise rejected: ') +
-					thunk + '\n' + colors.purple('* ' + errmsg(err)));
-			if (thunk.flag & PROMISE_FLAG_REJECTED)
-				return console.error(colors.yellow('* Rejected promise rejected: ') +
-					thunk + '\n' + colors.purple('* ' + errmsg(err)));
+		return err ? $$reject(thunk, err) : $$resolve(thunk, val);
+	}
 
-			thunk.result = err;
-			thunk.flag |= PROMISE_FLAG_REJECTED;
-		}
-		else {
-			if (thunk.flag & PROMISE_FLAG_SOLVED) return;
-			thunk.result = val;
-			thunk.flag |= PROMISE_FLAG_RESOLVED;
-		}
-
-		if (thunk.head || err) nextExec(thunk, $$fire);
-	} // $$callback
-
-	// $$fire
+	// $$fire(thunk)
 	function $$fire(thunk) {
 		if (!(thunk.flag & PROMISE_FLAG_SOLVED)) return;
 
@@ -365,7 +350,7 @@ void function (PromiseOrg) {
 			thunk.flag |= PROMISE_FLAG_HANDLED;
 		}
 
-		if (thunk.flag & PROMISE_FLAG_REJECTED)
+		if (thunk.flag === PROMISE_FLAG_REJECTED)
 			nextExec(thunk, $$checkUnhandledRejection);
 	} // $$fire
 
@@ -384,23 +369,21 @@ void function (PromiseOrg) {
 		} catch (e) { $$reject(thunk, e); }
 	} // fire
 
-	// $$checkUnhandledRejection
+	// $$checkUnhandledRejection(thunk)
 	function $$checkUnhandledRejection(thunk) {
-		if (!(thunk.flag & PROMISE_FLAG_HANDLED)) {
-			if (!(thunk.flag & PROMISE_FLAG_UNHANDLED_REJECTION))
-				$$unhandledRejection(thunk);
-			thunk.flag |= PROMISE_FLAG_UNHANDLED_REJECTION;
-		}
-	} // checkUnhandledRejection
+		if (!(thunk.flag & PROMISE_FLAG_UNHANDLED))
+			$$unhandledRejection(thunk);
+	}
 
-	// $$unhandledRejection
+	// $$unhandledRejection(thunk)
 	function $$unhandledRejection(thunk) {
+		thunk.flag |= PROMISE_FLAG_UNHANDLED_REJECTION;
 		process.emit('unhandledRejection', thunk.result, thunk);
 		console.error(colors.yellow('* UnhandledRejection: ') + thunk +
 			colors.purple('\n* ' + errmsg(thunk.result)));
 	}
 
-	// $$rejectionHandled
+	// $$rejectionHandled(thunk)
 	function $$rejectionHandled(thunk) {
 		process.emit('rejectionHandled', thunk);
 		console.error(colors.green('* RejectionHandled:   ') + thunk);

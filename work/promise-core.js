@@ -257,8 +257,8 @@
 		// toString
 		toString: function toString() {
 			return colors.cyan(this.constructor.name + ' { ') + (
-				this.$state === STATE_RESOLVED ? colors.green('<resolved ' + this.$result + '>'):
-				this.$state === STATE_REJECTED ? colors.red('<rejected ' + this.$result + '>'):
+				this.$state === STATE_RESOLVED ? colors.green(this.$result):
+				this.$state === STATE_REJECTED ? colors.red('<rejected> [' + this.$result + ']'):
 				colors.yellow('<pending>')) + colors.cyan(' }');
 		},
 
