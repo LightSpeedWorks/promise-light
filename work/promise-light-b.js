@@ -10,7 +10,7 @@ void function (PromiseOrg) {
 		return obj;
 	}, {});
 
-	function errmsg(err) { return err && err.stack || err; }
+	function errmsg(err) { return err.stack || err; }
 
 	// defProp(obj, prop, propDesc)
 	var defProp = function (obj) {
@@ -167,6 +167,7 @@ void function (PromiseOrg) {
 	} // PromiseRejected
 	PromiseRejected.prototype = Promise.prototype;
 
+	// new PromiseNext(parent, reject, resolve)
 	function PromiseNext(parent, reject, resolve) {
 		var thunk = this;
 		thunk.flag = 0;
@@ -181,6 +182,7 @@ void function (PromiseOrg) {
 	} // PromiseNext
 	PromiseNext.prototype = Promise.prototype;
 
+	// new PromiseDefer()
 	function PromiseDefer() {
 		var thunk = this;
 		thunk.flag = 0;
@@ -193,6 +195,7 @@ void function (PromiseOrg) {
 	} // PromiseDefer
 	PromiseDefer.prototype = Promise.prototype;
 
+	// new PromiseConvert(thenable)
 	function PromiseConvert(thenable) {
 		var thunk = this;
 		thunk.flag = 0;
@@ -210,7 +213,7 @@ void function (PromiseOrg) {
 
 	// Promise.resolve(val)
 	function resolve(val) {
-		if (val && typeof val.then === 'function')
+		if (typeof val === 'object' && val && typeof val.then === 'function')
 			return new PromiseConvert(val);
 		return new PromiseResolved(val);
 	}
@@ -256,7 +259,7 @@ void function (PromiseOrg) {
 	function $$resolve(thunk, val) {
 		if (thunk.flag & PROMISE_FLAG_SOLVED) return;
 
-		if (val && typeof val.then === 'function')
+		if (typeof val === 'object' && val && typeof val.then === 'function')
 			return val.then(
 				function (v) { return $$resolve(thunk, v); },
 				function (e) { return $$reject(thunk, e); });
@@ -315,15 +318,25 @@ void function (PromiseOrg) {
 			var r =
 				err ? (rej ? rej(err) : err) :
 				res ? res(val) : undefined;
-			if (r && r.then)
-				r.then(function (v) { return $$resolve(thunk, v); },
-					function (e) { return $$reject(thunk, e); });
-			else if (typeof r === 'function')
-				r(function (e, v) { return $$callback(thunk, e, v); });
-			else if (r instanceof Error) $$reject(thunk, r);
-			else $$resolve(thunk, r);
+			firebytype[typeof r](thunk, r);
 		} catch (e) { $$reject(thunk, e); }
 	} // fire
+
+	var firebytype = {
+		number:$$resolve, string:$$resolve, boolean:$$resolve, undefined:$$resolve,
+		object: function (thunk, r) {
+			if (!r) $$resolve(thunk, r);
+			else if (typeof r.then === 'function')
+				r.then(
+					function (v) { return $$resolve(thunk, v); },
+					function (e) { return $$reject(thunk, e); });
+			else if (r instanceof Error) $$reject(thunk, r);
+			else $$resolve(thunk, r);
+		},
+		'function': function (thunk, r) {
+			r(function (e, v) { return $$callback(thunk, e, v); });
+		}
+	};
 
 	// $$checkUnhandledRejection(thunk)
 	function $$checkUnhandledRejection(thunk) {
