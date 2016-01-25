@@ -403,12 +403,12 @@ void function (PromiseOrg) {
 
 	// isIterator(iter)
 	function isIterator(iter) {
-		return !!iter && (typeof iter.next === 'function' || isIterable(iter));
+		return typeof iter === 'object' && !!iter && (typeof iter.next === 'function' || isIterable(iter));
 	}
 
 	// isIterable(iter)
 	function isIterable(iter) {
-		return !!iter && typeof Symbol === 'function' &&
+		return typeof iter === 'object' && !!iter && typeof Symbol === 'function' &&
 			!!Symbol.iterator && typeof iter[Symbol.iterator] === 'function';
 	}
 
