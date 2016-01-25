@@ -314,7 +314,7 @@ void function (PromiseOrg) {
 	var firebytype = {
 		number:$$resolve, string:$$resolve, boolean:$$resolve, undefined:$$resolve,
 		object: function (thunk, r) {
-			if (!r) $$resolve(thunk, r);
+			if (r === null) $$resolve(thunk, r);
 			else if (typeof r.then === 'function')
 				r.then(
 					function (v) { return $$resolve(thunk, v); },
