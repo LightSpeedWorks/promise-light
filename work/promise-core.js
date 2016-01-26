@@ -31,12 +31,12 @@
 		function setValue(obj, prop, val) { obj[prop] = val; };
 
 	// getProto(obj)
-	var getProto = Object.getPrototypeOf || {}.__proto__ ?
-		function getProto(obj) { return obj.__proto__; } : null;
+	var getProto = Object.getPrototypeOf ||
+		function getProto(obj) { return obj.__proto__; };
 
 	// setProto
-	var setProto = typeof Object.setPrototypeOf === 'function' ?
-		Object.setPrototypeOf : function (obj, proto) { obj.__proto__ = proto; };
+	var setProto = typeof Object.setPrototypeOf ||
+		function (obj, proto) { obj.__proto__ = proto; };
 
 	// nextTickDo(fn)
 	var nextTickDo = 
@@ -130,18 +130,11 @@
 	var ARGS_RESOLVE = 2;
 	var ARGS_REJECT = 3;
 
-//	function PROMISE_RESOLVE() {}
-//	function PROMISE_REJECT() {}
 	function PROMISE_THEN() {}
 	function PROMISE_DEFER() {}
 
 	// PromiseCore
 	var PromiseCore = extend.call(Object, {
-
-		// initial values into prototype (primitives only)
-		//$state: STATE_UNRESOLVED,
-		//$result: undefined,
-		//$handled: false,
 
 		constructor: function PromiseCore(setup, val, res, parent) {
 
@@ -327,11 +320,9 @@
 		accept: function accept(val) { return new PromiseCoreResolved(val); },
 
 		// resolve
-		//resolve: function (val) { return new this.constructor(PROMISE_RESOLVE, val); },
 		resolve: function resolve(val) { return new PromiseCoreResolved(val); },
 
 		// resolve
-		//reject: function (err) { return new this.constructor(PROMISE_REJECT, err); },
 		reject: function reject(err) { return new PromiseCoreRejected(err); },
 
 		// isPromise(p)
@@ -376,7 +367,7 @@
 			void function (resolve, reject, completed) {
 
 				if ($state === STATE_RESOLVED) {
-					if ($result && $result.then)
+					if (typeof $result === 'object' && $result && $result.then)
 						return $result.then(complete, reject);
 
 					if (typeof $result === 'function')
@@ -448,7 +439,7 @@
 			var resolve  = x[ARGS_RESOLVE];
 			var reject   = x[ARGS_REJECT];
 			var resolved = x[STATE_RESOLVED];
-			if (val && val.then)
+			if (typeof val === 'object' && val && val.then)
 				val.then(function (val) {
 						resolve(resolved(val));
 				}, reject);
@@ -507,7 +498,7 @@
 
 	// isPromise
 	function isPromise(p) {
-		return !!p && typeof p.then === 'function';
+		return (typeof p === 'object' && !!p || typeof p === 'function') && typeof p.then === 'function';
 	}
 
 	// isIterator(iter)
