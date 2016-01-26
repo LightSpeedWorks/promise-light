@@ -1,6 +1,6 @@
 // PromiseLight
 
-void function (PromiseOrg) {
+void function (global, PromiseOrg) {
 	'use strict';
 
 	var COLORS = {red: '31', green: '32', purple: '35', cyan: '36', yellow: '33'};
@@ -443,9 +443,14 @@ void function (PromiseOrg) {
 	*/
 
 
+	if (!global.Promise) global.Promise = Promise;
+	if (!global.PromiseLight) global.PromiseLight = Promise;
+	setValue(Promise, 'Promise', Promise);
+	setValue(Promise, 'PromiseLight', Promise);
+
 	if (typeof module === 'object' && module && module.exports)
 		module.exports = Promise;
 
 	return Promise;
 
-}(typeof Promise === 'function' ? Promise : null);
+}(Function('return this')(), typeof Promise === 'function' ? Promise : null);
