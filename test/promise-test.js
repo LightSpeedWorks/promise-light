@@ -20,8 +20,8 @@ if (typeof process !== 'undefined') {
 }
 
 void function ($module, $print, assert, describe, it,
-		PromiseCore, PromiseLightA, PromiseLightB,
-		PromiseLight, PromiseLight4, PromiseLight6, PromiseLight8) {
+		PromiseCore, PromiseLight, PromiseLightA, PromiseLightB,
+		PromiseLight4, PromiseLight6, PromiseLight8) {
 	'use strict';
 
 	try {
@@ -540,6 +540,7 @@ void function ($module, $print, assert, describe, it,
 				var keys = Object.getOwnPropertyNames(Promise).filter(f).sort().join(',');
 				assert(keys === 'accept,all,defer,race,reject,resolve' ||
 					keys === 'Promise,PromiseThunk,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,promisify,promisifyAll,race,reject,resolve,thunkify,thunkifyAll,wrap' ||
+					keys === 'Promise,PromiseLight,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,promisify,promisifyAll,race,reject,resolve,thunkify,thunkifyAll,wrap' ||
 					keys === 'Promise,PromiseLight,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve,thunkify,wrap' ||
 					keys === 'accept,all,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve' ||
 					keys === '_asap,_setAsap,_setScheduler,all,race,reject,resolve' || // es6-promise
@@ -626,14 +627,14 @@ void function ($module, $print, assert, describe, it,
 	}); // keys forEach
 
 }(this,
-		typeof $print === 'function' ? $print : require('../lib/print'),
-		typeof assert === 'function' ? assert : require('../lib/assert'),
+		typeof $print   === 'function' ? $print   : require('../lib/print'),
+		typeof assert   === 'function' ? assert   : require('../lib/assert'),
 		typeof describe === 'function' ? describe : require('../lib/describe-it'),
-		typeof it === 'function' ? it : require('../lib/describe-it').it,
-		typeof PromiseCore === 'function' ? PromiseCore : require('../work/promise-core'),
+		typeof it       === 'function' ? it       : require('../lib/describe-it').it,
+		typeof PromiseCore   === 'function' ? PromiseCore   : require('../work/promise-core'),
+		typeof PromiseLight  === 'function' ? PromiseLight  : require('../promise-light'),
 		typeof PromiseLightA === 'function' ? PromiseLightA : require('../work/promise-light-a'),
 		typeof PromiseLightB === 'function' ? PromiseLightB : require('../work/promise-light-b'),
-		typeof PromiseLight === 'function' ? PromiseLight : require('../promise-light'),
 		typeof PromiseLight4 === 'function' ? PromiseLight4 : require('../work/promise-light4'),
 		typeof PromiseLight6 === 'function' ? PromiseLight6 : require('../work/promise-light6'),
 		typeof PromiseLight8 === 'function' ? PromiseLight8 : require('../work/promise-light8')
