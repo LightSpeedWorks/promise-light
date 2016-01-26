@@ -1,4 +1,4 @@
-// Promise
+// PromiseLight
 
 void function (PromiseOrg) {
 	'use strict';
@@ -213,7 +213,7 @@ void function (PromiseOrg) {
 
 	// Promise.resolve(val)
 	function resolve(val) {
-		if (typeof val === 'object' && val && typeof val.then === 'function')
+		if ((typeof val === 'object' && val || typeof val === 'function') && typeof val.then === 'function')
 			return new PromiseConvert(val);
 		return new PromiseResolved(val);
 	}

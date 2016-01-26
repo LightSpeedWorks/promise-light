@@ -1,4 +1,4 @@
-// Promise
+// PromiseThunk
 
 void function (PromiseOrg) {
 	'use strict';
