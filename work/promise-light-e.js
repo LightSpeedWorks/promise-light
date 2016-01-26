@@ -1,6 +1,6 @@
-// Promise
+// PromiseLight
 
-void function (PromiseOrg) {
+void function (global, PromiseOrg) {
 	'use strict';
 
 	var COLORS = {red: '31', green: '32', purple: '35', cyan: '36', yellow: '33'};
@@ -213,7 +213,7 @@ void function (PromiseOrg) {
 
 	// Promise.resolve(val)
 	function resolve(val) {
-		if (typeof val === 'object' && val && typeof val.then === 'function')
+		if ((typeof val === 'object' && val || typeof val === 'function') && typeof val.then === 'function')
 			return new PromiseConvert(val);
 		return new PromiseResolved(val);
 	}
@@ -325,7 +325,7 @@ void function (PromiseOrg) {
 	var firebytype = {
 		number:$$resolve, string:$$resolve, boolean:$$resolve, undefined:$$resolve,
 		object: function (thunk, r) {
-			if (!r) $$resolve(thunk, r);
+			if (r === null) $$resolve(thunk, r);
 			else if (typeof r.then === 'function')
 				r.then(
 					function (v) { return $$resolve(thunk, v); },
@@ -403,12 +403,12 @@ void function (PromiseOrg) {
 
 	// isIterator(iter)
 	function isIterator(iter) {
-		return !!iter && (typeof iter.next === 'function' || isIterable(iter));
+		return typeof iter === 'object' && !!iter && (typeof iter.next === 'function' || isIterable(iter));
 	}
 
 	// isIterable(iter)
 	function isIterable(iter) {
-		return !!iter && typeof Symbol === 'function' &&
+		return typeof iter === 'object' && !!iter && typeof Symbol === 'function' &&
 			!!Symbol.iterator && typeof iter[Symbol.iterator] === 'function';
 	}
 
@@ -443,9 +443,14 @@ void function (PromiseOrg) {
 	*/
 
 
+	if (!global.Promise) global.Promise = Promise;
+	if (!global.PromiseLight) global.PromiseLight = Promise;
+	setValue(Promise, 'Promise', Promise);
+	setValue(Promise, 'PromiseLight', Promise);
+
 	if (typeof module === 'object' && module && module.exports)
 		module.exports = Promise;
 
 	return Promise;
 
-}(typeof Promise === 'function' ? Promise : null);
+}(Function('return this')(), typeof Promise === 'function' ? Promise : null);
