@@ -7,7 +7,6 @@
 		var BlueBird3 = require('bluebird305');
 	} catch (e) {}
 	var PromiseLight = require('../promise-light');	// normal object
-	Promise = PromiseLight
 	var PromiseCore = require('./promise-core');	// normal object and thunk function
 	var Promise2 = require('./promise-light2');	// normal object
 	var PromiseB = require('./promise-light-b');	// normal object + closure
@@ -16,6 +15,7 @@
 	var PromiseA = require('./promise-light-a');	// normal object
 	var Promise9 = require('./promise-light9');	// normal object + closure
 	var Promise8 = require('./promise-light8');	// normal object
+	Promise = Promise9;
 	try {
 		var PromiseThunk = require('../../promise-thunk/promise-thunk'); // closure function
 	} catch (e) {
@@ -37,11 +37,6 @@
 			var start = Date.now();
 			var resolve, reject;
 			var promise = new Promise(function (res, rej) { resolve = res; reject = rej; });
-			//try {
-			//	var dfd = Promise.defer();
-			//	if (typeof dfd.resolve !== 'function') throw new Error('Promise.defer() dfd.resolve?');
-			//	if (typeof dfd.reject  !== 'function') throw new Error('Promise.defer() dfd.reject?');
-			//} catch (e) { return console.log('Promise ' + nm + '? ' + e), PromiseLight.resolve(1); }
 
 			next();
 
