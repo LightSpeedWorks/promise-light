@@ -840,6 +840,7 @@ void function (assert, describe, it,
 				function end() { --n || done(); }
 			}); // promisify 5
 
+			key !== 'bluebird' &&
 			Promise.promisify &&
 			it('promisify 6 childProcess.exec err, val1, val2', function (done) {
 				var execStylePromise = Promise.promisify(execStyle);
@@ -865,6 +866,7 @@ void function (assert, describe, it,
 				function end() { --n || done(); }
 			}); // promisify 6
 
+			key !== 'bluebird' &&
 			Promise.promisify &&
 			it('promisify 7 childProcess.exec err, val1, val2', function (done) {
 				var execStylePromise = Promise.promisify(execStyle);
