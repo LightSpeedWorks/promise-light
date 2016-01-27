@@ -1,4 +1,4 @@
-(function (Promise) {
+(function (PromiseOrg) {
 	'use strict';
 
 	console.log(process.version, process.arch);
@@ -15,7 +15,8 @@
 	var PromiseA = require('./promise-light-a');	// normal object
 	var Promise9 = require('./promise-light9');	// normal object + closure
 	var Promise8 = require('./promise-light8');	// normal object
-	Promise = Promise9;
+
+	var Promise = (PromiseOrg = PromiseOrg || PromiseB);
 	try {
 		var PromiseThunk = require('../../promise-thunk/promise-thunk'); // closure function
 	} catch (e) {
@@ -23,15 +24,12 @@
 		var PromiseThunk = require('promise-thunk'); // closure function
 	}
 
-	// native Promise is null then use PromiseLight
-	if (!Promise) Promise = PromiseLight;
-
 	var N = 1e3, M = 200;
 
 	function bench(Promise, nm) {
 		try {
 
-			if (!Promise) return PromiseLight.resolve(1);
+			if (!Promise) return PromiseOrg.resolve(1);
 			var arr2 = [];
 			var j = 0;
 			var start = Date.now();
@@ -43,7 +41,7 @@
 			function next() {
 				if (++j > M) {
 					process.stdout.write(nm + ': ' + ((Date.now() - start) / 1000.0).toFixed(3) + '   ');
-					return resolve(); // dfd.resolve()
+					return resolve();
 				}
 
 				new Promise(function (res, rej) {
@@ -62,7 +60,7 @@
 
 			}
 
-			return promise; // dfd.promise
+			return promise;
 		} catch (e) { console.log(e.stack || e); }
 	}
 
