@@ -356,14 +356,16 @@ void function (global, PromiseOrg) {
 	// $$unhandledRejection(thunk)
 	function $$unhandledRejection(thunk) {
 		thunk.flag |= PROMISE_FLAG_UNHANDLED_REJECTION;
-		process.emit('unhandledRejection', thunk.result, thunk);
+		if (typeof process === 'object' && process && typeof process.on === 'function')
+			process.emit('unhandledRejection', thunk.result, thunk);
 		console.error(colors.yellow('* UnhandledRejection: ') + thunk +
 			colors.purple('\n* ' + errmsg(thunk.result)));
 	}
 
 	// $$rejectionHandled(thunk)
 	function $$rejectionHandled(thunk) {
-		process.emit('rejectionHandled', thunk);
+		if (typeof process === 'object' && process && typeof process.on === 'function')
+			process.emit('rejectionHandled', thunk);
 		console.error(colors.green('* RejectionHandled:   ') + thunk);
 	}
 
