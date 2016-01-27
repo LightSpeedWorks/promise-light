@@ -1,6 +1,6 @@
 {
   "name": "promise-light",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "promise light version",
   "main": "promise-light.js",
   "dependencies": {},
@@ -23,9 +23,6 @@
   },
   "homepage": "https://github.com/LightSpeedWorks/promise-light",
   "author": "LightSpeedC",
-  "directories": {
-    "test": "test"
-  },
   "scripts": {
     "test": "mocha"
   },

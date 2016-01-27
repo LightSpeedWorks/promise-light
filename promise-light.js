@@ -1,18 +1,18 @@
-// promise-light.js
+// PromiseLight
 
-this.PromiseLight = function () {
+void function (global, PromiseOrg) {
 	'use strict';
 
-	var STATE_UNRESOLVED = -1;
-	var STATE_RESOLVED = 0;
-	var STATE_REJECTED = 1;
-	var ARGS_RESOLVE = 2;
-	var ARGS_REJECT = 3;
+	var COLORS = {red: '31', green: '32', purple: '35', cyan: '36', yellow: '33'};
+	var colors = Object.keys(COLORS).reduce(function (obj, k) {
+		obj[k] = typeof window === 'object' ? function (x) { return x; } :
+			function (x) { return '\x1b[' + COLORS[k] + 'm' + x + '\x1b[m'; };
+		return obj;
+	}, {});
 
-	var COLOR_ERROR  = typeof window !== 'undefined' ? '' : '\x1b[35m';
-	var COLOR_NORMAL = typeof window !== 'undefined' ? '' : '\x1b[m';
+	function errmsg(err) { return err.stack || err; }
 
-	// defProp
+	// defProp(obj, prop, propDesc)
 	var defProp = function (obj) {
 		if (!Object.defineProperty) return null;
 		try {
@@ -24,204 +24,357 @@ this.PromiseLight = function () {
 	// setConst(obj, prop, val)
 	var setConst = defProp ?
 		function setConst(obj, prop, val) {
-			defProp(obj, prop, {value: val}); return val; } :
-		function setConst(obj, prop, val) { return obj[prop] = val; };
+			defProp(obj, prop, {value: val}); } :
+		function setConst(obj, prop, val) { obj[prop] = val; };
 
 	// setValue(obj, prop, val)
 	var setValue = defProp ?
 		function setValue(obj, prop, val) {
 			defProp(obj, prop, {value: val,
-				writable: true, configurable: true}); return val; } :
-		function setValue(obj, prop, val) { return obj[prop] = val; };
+				writable: true, configurable: true}); } :
+		function setValue(obj, prop, val) { obj[prop] = val; };
 
 	// getProto(obj)
-	var getProto = Object.getPrototypeOf || {}.__proto__ ?
-		function getProto(obj) { return obj.__proto__; } : null;
+	var getProto = Object.getPrototypeOf ||
+		function getProto(obj) { return obj.__proto__; };
 
 	// setProto(obj, proto)
-	var setProto = Object.setPrototypeOf || {}.__proto__ ?
-		function setProto(obj, proto) { obj.__proto__ = proto; } : null;
+	var setProto = Object.setPrototypeOf ||
+		function (obj, proto) { obj.__proto__ = proto; };
 
-	// Queue
-	function Queue() {
-		this.tail = this.head = undefined;
+	// BaseClass.extend(proto, statics)
+	function extend(proto, statics) {
+		var ctor = proto.constructor;
+		function super_() { setValue(this, 'constructor', ctor); }
+		if (typeof this === 'function')
+			super_.prototype = this.prototype,
+			ctor.prototype = new super_();
+		for (var p in proto)
+			if (proto.hasOwnProperty(p) &&
+				!ctor.prototype.hasOwnProperty(p))
+				setValue(ctor.prototype, p, proto[p]);
+		for (var p in statics)
+			if (statics.hasOwnProperty(p))
+				setValue(ctor, p, statics[p]);
+		return ctor;
 	}
-	// Queue#push(x)
-	setValue(Queue.prototype, 'push', function push(x) {
-		if (this.tail)
-			this.tail = this.tail.next = {x:x, next:undefined};
-		else
-			this.tail = this.head = {x:x, next:undefined};
-		return this;
-	});
-	// Queue#shift()
-	setValue(Queue.prototype, 'shift', function shift() {
-		if (!this.head) return undefined;
-		var x = this.head.x;
-		this.head = this.head.next;
-		if (!this.head) this.tail = undefined;
-		return x;
-	});
 
 	// nextTickDo(fn)
-	var nextTickDo = typeof setImmediate === 'function' ? setImmediate :
+	var nextTickDo =
 		typeof process === 'object' && process &&
 		typeof process.nextTick === 'function' ? process.nextTick :
+		typeof setImmediate === 'function' ? setImmediate :
 		function nextTickDo(fn) { setTimeout(fn, 0); };
 
-	var nextTickTasks = new Queue();
-	var nextTickProgress = false;
+	// nextExec(ctx, fn)
+	var nextExec = function () {
+		// tasks {head, tail}
+		var tasks = {head:undefined, tail:undefined};
+		var progress = false;
 
-	// nextTick2(ctx, fn)
-	function nextTick2(ctx, fn) {
-		if (typeof fn !== 'function')
-			throw new TypeError('fn must be a function');
+		// nextExec(ctx, fn)
+		function nextExec(ctx, fn) {
+			var task = {ctx:ctx, fn:fn, chain:undefined};
+			tasks.tail = tasks.tail ? (tasks.tail.chain = task) : (tasks.head = task);
 
-		nextTickTasks.push({ctx:ctx, fn:fn});
-		if (nextTickProgress) return;
+			if (progress) return;
+			progress = true;
+			nextTickDo(nextTickExec);
+		}
 
-		nextTickProgress = true;
+		function nextTickExec() {
+			var task;
+			while (task = tasks.head) {
+				tasks.head = task.chain;
+				task.chain = undefined;
+				if (!tasks.head) tasks.tail = undefined;
 
-		nextTickDo(function () {
-			var args;
-			while (args = nextTickTasks.shift())
-				args.fn.call(args.ctx);
+				var fn = task.fn;
+				fn(task.ctx);
+			}
+			progress = false;
+		}
 
-			nextTickProgress = false;
-		});
+		return nextExec;
+	}(); // nextExec
+
+
+	var PROMISE_FLAG_RESOLVED = 1;
+	var PROMISE_FLAG_REJECTED = 2;
+	var PROMISE_FLAG_SOLVED = PROMISE_FLAG_RESOLVED | PROMISE_FLAG_REJECTED;
+	var PROMISE_FLAG_HANDLED = 4;
+	var PROMISE_FLAG_UNHANDLED_REJECTION = 8;
+	var PROMISE_FLAG_UNHANDLED = PROMISE_FLAG_HANDLED | PROMISE_FLAG_UNHANDLED_REJECTION;
+
+
+	// new Promise(function setup(resolve, reject) {})
+	var Promise = extend({
+		constructor: function Promise(setup) {
+			if (!(this instanceof Promise))
+				throw new TypeError('new Promise!!!');
+
+			var thunk = this;
+			thunk.flag = 0;
+			thunk.result = undefined;
+			thunk.tail = thunk.head = undefined;
+
+			try { setup(resolve, reject); }
+			catch (err) { reject(err); }
+
+			return thunk;
+
+			function resolve(val) { return $$resolve(thunk, val); }
+			function reject(err)  { return $$reject(thunk, err); }
+		}, // Promise
+
+		then: then,
+		'catch': caught,
+		toString: toString,
+		toJSON: toJSON
+	},
+
+	{ // statics
+		all: all,
+		race: race,
+		defer: defer,
+		resolve: resolve,
+		reject: reject,
+		accept: resolve,
+		convert: resolve,
+		wrap: promisify,
+		promisify: promisify,
+		thunkify: thunkify,
+		promisifyAll: promisifyAll,
+		thunkifyAll: thunkifyAll,
+		isIterable: isIterable,
+		isIterator: isIterator,
+		isPromise: isPromise,
+		makeArrayFromIterator: makeArrayFromIterator
+	}); // Promise
+
+	// new PromiseResolved(val)
+	function PromiseResolved(val) {
+		var thunk = this;
+		thunk.flag = PROMISE_FLAG_RESOLVED;
+		thunk.result = val;
+		thunk.tail = thunk.head = undefined;
+		return thunk;
+	} // PromiseResolved
+	PromiseResolved.prototype = Promise.prototype;
+
+	// new PromiseRejected(err)
+	function PromiseRejected(err) {
+		var thunk = this;
+		thunk.flag = PROMISE_FLAG_REJECTED;
+		thunk.result = err;
+		thunk.tail = thunk.head = undefined;
+		nextExec(thunk, $$fire);
+		return thunk;
+	} // PromiseRejected
+	PromiseRejected.prototype = Promise.prototype;
+
+	// new PromiseNext(parent, reject, resolve)
+	function PromiseNext(parent, reject, resolve) {
+		var thunk = this;
+		thunk.flag = 0;
+		thunk.result = undefined;
+		thunk.tail = thunk.head = undefined;
+
+		var bomb = {rej:reject, res:resolve, thunk:thunk, chain:undefined};
+		parent.tail = parent.tail ? (parent.tail.chain = bomb) : (parent.head = bomb);
+		if (parent.flag & PROMISE_FLAG_SOLVED) nextExec(parent, $$fire);
+
+		return thunk;
+	} // PromiseNext
+	PromiseNext.prototype = Promise.prototype;
+
+	// new PromiseDefer()
+	function PromiseDefer() {
+		var thunk = this;
+		thunk.flag = 0;
+		thunk.result = undefined;
+		thunk.tail = thunk.head = undefined;
+		return {promise:thunk, resolve:resolve, reject:reject};
+
+		function resolve(val) { return $$resolve(thunk, val); }
+		function reject(err)  { return $$reject(thunk, err); }
+	} // PromiseDefer
+	PromiseDefer.prototype = Promise.prototype;
+
+	// new PromiseConvert(thenable)
+	function PromiseConvert(thenable) {
+		var thunk = this;
+		thunk.flag = 0;
+		thunk.result = undefined;
+		thunk.tail = thunk.head = undefined;
+
+		thenable.then(resolve, reject);
+
+		return thunk;
+
+		function resolve(val) { return $$resolve(thunk, val); }
+		function reject(err)  { return $$reject(thunk, err); }
+	} // PromiseConvert
+	PromiseConvert.prototype = Promise.prototype;
+
+	// Promise.resolve(val)
+	function resolve(val) {
+		if (isPromise(val)) return new PromiseConvert(val);
+		return new PromiseResolved(val);
 	}
 
-	function PROMISE_RESOLVE() {}
-	function PROMISE_REJECT() {}
-	function PROMISE_THEN() {}
+	// Promise.reject(err)
+	function reject(err) {
+		return new PromiseRejected(err);
+	}
 
-	// PromiseLight(setup(resolve, reject))
-	function PromiseLight(setup, val, rej, $that) {
-		var $this = this;
-		this.$callbacks = new Queue();
-		this.$handled = false;
+	// Promise.defer()
+	function defer() {
+		return new PromiseDefer();
+	}
 
-		if (setup === PROMISE_RESOLVE) {
-			this.$state = STATE_RESOLVED;
-			this.$result = val;
+	// Promise#toString()
+	function toString() {
+		return colors.cyan('PromiseLight { ') + (
+			this.flag & PROMISE_FLAG_RESOLVED ? colors.green(this.result) :
+			this.flag & PROMISE_FLAG_REJECTED ? colors.red('<rejected> [' + this.result + ']') :
+			colors.yellow('<pending>')) + colors.cyan(' }');
+	}
+
+	// Promise#toJSON()
+	function toJSON() {
+		var obj = {'class': 'PromiseLight'};
+		obj.state = ['pending', 'resolved', 'rejected'][this.flag & PROMISE_FLAG_SOLVED];
+		if (this.flag & PROMISE_FLAG_RESOLVED) obj.value = this.result;
+		if (this.flag & PROMISE_FLAG_REJECTED) obj.error = this.result;
+		return obj;
+	}
+
+	// Promise#then(resolve, reject)
+	function then(resolve, reject) {
+		return new PromiseNext(this, reject, resolve);
+	}
+
+	// Promise#catch(reject)
+	function caught(reject) {
+		return new PromiseNext(this, reject, undefined);
+	}
+
+	// $$resolve(thunk, val)
+	function $$resolve(thunk, val) {
+		if (thunk.flag & PROMISE_FLAG_SOLVED) return;
+
+		if (isPromise(val))
+			return val.then(
+				function (v) { return $$resolve(thunk, v); },
+				function (e) { return $$reject(thunk, e); });
+
+		thunk.result = val;
+		thunk.flag = PROMISE_FLAG_RESOLVED;
+		if (thunk.head) nextExec(thunk, $$fire);
+	} // $$resolve
+
+	// $$reject(thunk, err)
+	function $$reject(thunk, err) {
+		if (thunk.flag & PROMISE_FLAG_RESOLVED)
+			return console.error(colors.yellow('* Resolved promise rejected: ') +
+				thunk + '\n' + colors.purple('* ' + errmsg(err)));
+		if (thunk.flag & PROMISE_FLAG_REJECTED)
+			return console.error(colors.yellow('* Rejected promise rejected: ') +
+				thunk + '\n' + colors.purple('* ' + errmsg(err)));
+
+		thunk.result = err;
+		thunk.flag = PROMISE_FLAG_REJECTED;
+		nextExec(thunk, $$fire);
+	} // $$reject
+
+	// $$callback(thunk, err, val)
+	function $$callback(thunk, err, val) {
+		return err ? $$reject(thunk, err) : $$resolve(thunk, val);
+	}
+
+	// $$fire(thunk)
+	function $$fire(thunk) {
+		if (!(thunk.flag & PROMISE_FLAG_SOLVED)) return;
+
+		if (thunk.flag & PROMISE_FLAG_REJECTED) var err = thunk.result;
+		else var val = thunk.result;
+
+		var bomb;
+		while (bomb = thunk.head) {
+			thunk.head = bomb.chain;
+			bomb.chain = undefined;
+			if (!thunk.head) thunk.tail = undefined;
+
+			fire(bomb.thunk, err, val, bomb.rej, bomb.res);
+
+			if ((thunk.flag & PROMISE_FLAG_UNHANDLED) ===
+					PROMISE_FLAG_UNHANDLED_REJECTION)
+				$$rejectionHandled(thunk);
+			thunk.flag |= PROMISE_FLAG_HANDLED;
 		}
-		else if (setup === PROMISE_REJECT) {
-			this.$state = STATE_REJECTED;
-			this.$result = val;
+
+		if (thunk.flag === PROMISE_FLAG_REJECTED)
+			nextExec(thunk, $$checkUnhandledRejection);
+	} // $$fire
+
+	function fire(thunk, err, val, rej, res) {
+		try {
+			var r =
+				err ? (rej ? rej(err) : err) :
+				res ? res(val) : undefined;
+			firebytype[typeof r](thunk, r);
+		} catch (e) { $$reject(thunk, e); }
+	} // fire
+
+	var firebytype = {
+		number:$$resolve, string:$$resolve, boolean:$$resolve, undefined:$$resolve,
+		object: function (thunk, r) {
+			if (r === null) $$resolve(thunk, r);
+			else if (typeof r.then === 'function')
+				r.then(
+					function (v) { return $$resolve(thunk, v); },
+					function (e) { return $$reject(thunk, e); });
+			else if (r instanceof Error) $$reject(thunk, r);
+			else $$resolve(thunk, r);
+		},
+		'function': function (thunk, r) {
+			if (typeof r.then === 'function')
+				r.then(
+					function (v) { return $$resolve(thunk, v); },
+					function (e) { return $$reject(thunk, e); });
+			else r(function (e, v) { return $$callback(thunk, e, v); });
 		}
-		else {
-			this.$state = STATE_UNRESOLVED;
-			this.$result = undefined;
+	};
 
-			if (setup === PROMISE_THEN) {
-				$that.$callbacks.push([val, rej, resolve, reject]);
-				if ($that.$state !== STATE_UNRESOLVED)
-					nextTick2($that, $fire);
-			}
-			else if (setup && typeof setup === 'function') {
-				try { setup.call(this, resolve, reject); }
-				catch (err) { reject(err); }
-			}
-			else {
-				// no setup, public promise
-				setConst(this, '$resolve', resolve);
-				setConst(this, '$reject',  reject);
-			}
+	// $$checkUnhandledRejection(thunk)
+	function $$checkUnhandledRejection(thunk) {
+		if (!(thunk.flag & PROMISE_FLAG_UNHANDLED))
+			$$unhandledRejection(thunk);
+	}
 
-		}
+	// $$unhandledRejection(thunk)
+	function $$unhandledRejection(thunk) {
+		thunk.flag |= PROMISE_FLAG_UNHANDLED_REJECTION;
+		if (typeof process === 'object' && process && typeof process.on === 'function')
+			process.emit('unhandledRejection', thunk.result, thunk);
+		console.error(colors.yellow('* UnhandledRejection: ') + thunk +
+			colors.purple('\n* ' + errmsg(thunk.result)));
+	}
 
-		// resolve(val)
-		function resolve(val) {
-			if ($this.$state === STATE_UNRESOLVED)
-				$this.$state = STATE_RESOLVED, $this.$result = val, nextTick2($this, $fire);
-		}
+	// $$rejectionHandled(thunk)
+	function $$rejectionHandled(thunk) {
+		if (typeof process === 'object' && process && typeof process.on === 'function')
+			process.emit('rejectionHandled', thunk);
+		console.error(colors.green('* RejectionHandled:   ') + thunk);
+	}
 
-		// reject(err)
-		function reject(err) {
-			if ($this.$state === STATE_UNRESOLVED)
-				$this.$state = STATE_REJECTED, $this.$result = err, nextTick2($this, $fire);
-		}
-
-	} // PromiseLight
-
-	// then(resolved, rejected)
-	setValue(PromiseLight.prototype, 'then', function then(resolved, rejected) {
-		if (resolved != null && typeof resolved !== 'function')
-			throw new TypeError('resolved must be a function');
-		if (rejected != null && typeof rejected !== 'function')
-			throw new TypeError('rejected must be a function');
-
-		return new PromiseLight(PROMISE_THEN, resolved, rejected, this);
-	}); // then
-
-	// catch(rejected)
-	setValue(PromiseLight.prototype, 'catch', function caught(rejected) {
-		if (rejected != null && typeof rejected !== 'function')
-			throw new TypeError('rejected must be a function');
-
-		return new PromiseLight(PROMISE_THEN, undefined, rejected, this);
-	}); // catch
-
-	// $fire
-	setValue(PromiseLight.prototype, '$fire', $fire);
-	function $fire() {
-		var $this = this;
-		var $state = this.$state;
-		var $result = this.$result;
-		var $callbacks = this.$callbacks;
-		var elem;
-		while (elem = $callbacks.shift()) {
-			(function (elem) {
-				$this.$handled = true;
-				var resolve = elem[ARGS_RESOLVE], reject = elem[ARGS_REJECT];
-				var completed = elem[$state];
-				function complete(val) {
-					resolve(completed.call($this, val)); }
-				try {
-					if ($state === STATE_RESOLVED) {
-						if (!completed) return resolve($result);
-						if ($result instanceof PromiseLight || isPromise($result))
-							return $result.then(complete, reject);
-					}
-					else { // $state === STATE_REJECTED
-						if (!completed) return reject($result);
-					}
-					complete($result);
-				} catch (err) {
-					reject(err);
-				}
-			})(elem);
-		} // while $callbacks.shift()
-		nextTick2($this, $checkUnhandledRejection);
-	} // $fire
-
-	// $checkUnhandledRejection
-	setValue(PromiseLight.prototype, '$checkUnhandledRejection', $checkUnhandledRejection);
-	function $checkUnhandledRejection() {
-		if (this.$state === STATE_REJECTED && !this.$handled) {
-			console.error(COLOR_ERROR + 'Unhandled rejection ' +
-					(this.$result instanceof Error ? this.$result.stack || this.$result : this.$result) +
-					COLOR_NORMAL);
-			// or throw this.$result;
-			// or process.emit...
-		}
-	} // $checkUnhandledRejection
-
-	// PromiseLight.resolve(val)
-	setValue(PromiseLight, 'resolve', function resolve(val) {
-		return new PromiseLight(PROMISE_RESOLVE, val); });
-
-	// PromiseLight.reject(err)
-	setValue(PromiseLight, 'reject', function reject(err) {
-		return new PromiseLight(PROMISE_REJECT, err); });
-
-	// PromiseLight.all([p, ...])
-	setValue(PromiseLight, 'all', function all(promises) {
+	// Promise.all([p, ...])
+	function all(promises) {
 		if (isIterator(promises)) promises = makeArrayFromIterator(promises);
 		if (!(promises instanceof Array))
 			throw new TypeError('promises must be an array');
-
-		return new PromiseLight(
+		return new Promise(
 			function promiseAll(resolve, reject) {
 				var n = promises.length;
 				if (n === 0) return resolve([]);
@@ -229,63 +382,48 @@ this.PromiseLight = function () {
 				promises.forEach(function (p, i) {
 					function complete(val) {
 						res[i] = val; if (--n === 0) resolve(res); }
-					function error(err) {
-						if (n > 0) reject(err); n = 0; }
-					if (p instanceof PromiseLight || isPromise(p))
-						return p.then(complete, error);
+					if (isPromise(p))
+						return p.then(complete, reject);
 					complete(p);
 				}); // promises.forEach
 			}
-		); // return new PromiseLight
-	}); // all
+		); // return new Promise
+	} // all
 
-	// PromiseLight.race([p, ...])
-	setValue(PromiseLight, 'race', function race(promises) {
+	// Promise.race([p, ...])
+	function race(promises) {
 		if (isIterator(promises)) promises = makeArrayFromIterator(promises);
 		if (!(promises instanceof Array))
 			throw new TypeError('promises must be an array');
 
-		return new PromiseLight(
+		return new Promise(
 			function promiseRace(resolve, reject) {
 				promises.forEach(function (p) {
-					if (p instanceof PromiseLight || isPromise(p))
+					if (isPromise(p))
 						return p.then(resolve, reject);
 					resolve(p);
 				}); // promises.forEach
 			}
-		); // return new PromiseLight
-	}); // race
+		); // return new Promise
+	} // race
 
-	// PromiseLight.accept(val)
-	setValue(PromiseLight, 'accept', PromiseLight.resolve);
-
-	// PromiseLight.defer()
-	setValue(PromiseLight, 'defer', function defer() {
-		var p = new PromiseLight();
-		return {promise: p, resolve: p.$resolve, reject: p.$reject};
-	});
-
-	// isPromise
-	setValue(PromiseLight, 'isPromise', isPromise);
+	// isPromise(p)
 	function isPromise(p) {
-		return p instanceof PromiseLight || !!p && typeof p.then === 'function';
+		return (typeof p === 'object' && !!p || typeof p === 'function') && typeof p.then === 'function';
 	}
 
 	// isIterator(iter)
-	setValue(PromiseLight, 'isIterator', isIterator);
 	function isIterator(iter) {
-		return !!iter && (typeof iter.next === 'function' || isIterable(iter));
+		return typeof iter === 'object' && !!iter && (typeof iter.next === 'function' || isIterable(iter));
 	}
 
 	// isIterable(iter)
-	setValue(PromiseLight, 'isIterable', isIterable);
 	function isIterable(iter) {
-		return !!iter && typeof Symbol === 'function' &&
-					!!Symbol.iterator && typeof iter[Symbol.iterator] === 'function';
+		return typeof iter === 'object' && !!iter && typeof Symbol === 'function' &&
+			!!Symbol.iterator && typeof iter[Symbol.iterator] === 'function';
 	}
 
 	// makeArrayFromIterator(iter or array)
-	setValue(PromiseLight, 'makeArrayFromIterator', makeArrayFromIterator);
 	function makeArrayFromIterator(iter) {
 		if (iter instanceof Array) return iter;
 		if (!isIterator(iter)) return [iter];
@@ -303,11 +441,191 @@ this.PromiseLight = function () {
 		}
 	} // makeArrayFromIterator
 
-	if (typeof module === 'object' && module.exports)
-		module.exports = PromiseLight;
+	// promisify(fn, [options])
+	function promisify(fn, options) {
+		// promisify(object target, string method, [object options]) : undefined
+		if (fn && typeof fn === 'object' && options && typeof options === 'string') {
+			var object = fn, method = options, options = arguments[2];
+			var suffix = options && typeof options === 'string' ? options :
+				options && typeof options.suffix === 'string' ? options.suffix :
+				options && typeof options.postfix === 'string' ? options.postfix : 'Async';
+			var methodAsyncCached = method + suffix + 'Cached';
+			Object.defineProperty(object, method + suffix, {
+				get: function () {
+					return this.hasOwnProperty(methodAsyncCached) &&
+						typeof this[methodAsyncCached] === 'function' ? this[methodAsyncCached] :
+						setValue(this, methodAsyncCached, promisify(this, this[method]));
+				},
+				configurable: true
+			});
+			return;
+		}
 
-	return PromiseLight;
+		// promisify([object ctx,] function fn) : function
+		var ctx = typeof this !== 'function' ? this : undefined;
+		if (typeof options === 'function') ctx = fn, fn = options, options = arguments[2];
+		if (options && options.context) ctx = options.context;
+		if (typeof fn !== 'function')
+			throw new TypeError('promisify: argument must be a function');
 
-}();
+		// promisified
+		promisified.promisified = true;
+		return promisified;
+		function promisified() {
+			var args = arguments;
+			return PromiseThunk(function (res, rej) {
+				args[args.length++] = function callback(err, val) {
+					try {
+						return err instanceof Error ? rej(err) :
+							// normal node style callback
+							arguments.length === 2 ? (err ? rej(err) : res(val)) :
+							// fs.exists like callback, arguments[0] is value
+							arguments.length === 1 ? res(arguments[0]) :
+							// unknown callback
+							arguments.length === 0 ? res() :
+							// child_process.exec like callback
+							res(slice.call(arguments, err == null ? 1 : 0));
+					} catch (e) { rej(e); }
+				};
+				fn.apply(ctx, args);
+			});
+		};
+	} // promisify
 
-this.Promise = typeof Promise === 'function' ? Promise : this.PromiseLight;
+	// thunkify(fn, [options])
+	function thunkify(fn, options) {
+		// thunkify(object target, string method, [object options]) : undefined
+		if (fn && typeof fn === 'object' && options && typeof options === 'string') {
+			var object = fn, method = options, options = arguments[2];
+			var suffix = options && typeof options === 'string' ? options :
+				options && typeof options.suffix === 'string' ? options.suffix :
+				options && typeof options.postfix === 'string' ? options.postfix : 'Async';
+			var methodAsyncCached = method + suffix + 'Cached';
+			Object.defineProperty(object, method + suffix, {
+				get: function () {
+					return this.hasOwnProperty(methodAsyncCached) &&
+						typeof this[methodAsyncCached] === 'function' ? this[methodAsyncCached] :
+						setValue(this, methodAsyncCached, thunkify(this, this[method]));
+				},
+				configurable: true
+			});
+			return;
+		}
+
+		// thunkify([object ctx,] function fn) : function
+		var ctx = typeof this !== 'function' ? this : undefined;
+		if (typeof options === 'function') ctx = fn, fn = options, options = arguments[2];
+		if (options && options.context) ctx = options.context;
+		if (typeof fn !== 'function')
+			throw new TypeError('thunkify: argument must be a function');
+
+		// thunkified
+		thunkified.thunkified = true;
+		return thunkified;
+		function thunkified() {
+			var result, callbacks = [], unhandled;
+			arguments[arguments.length++] = function callback(err, val) {
+				if (result) {
+					if (err)
+						console.error(COLOR_ERROR + 'Unhandled callback error: ' + err2str(err) + COLOR_NORMAL);
+					return;
+				}
+
+				result = arguments;
+				if (callbacks.length === 0 && err instanceof Error)
+					unhandled = true,
+					console.error(COLOR_ERROR + 'Unhandled callback error: ' + err2str(err) + COLOR_NORMAL);
+
+				for (var i = 0, n = callbacks.length; i < n; ++i)
+					fire(callbacks[i]);
+				callbacks = [];
+			};
+			fn.apply(ctx, arguments);
+
+			// thunk
+			return function thunk(cb) {
+				if (typeof cb !== 'function')
+					throw new TypeError('argument must be a function');
+
+				if (unhandled)
+					unhandled = false,
+					console.error(COLOR_ERROR + 'Unhandled callback error handled: ' + err2str(result[0]) + COLOR_NORMAL);
+
+				if (result) return fire(cb);
+				callbacks.push(cb);
+			};
+
+			// fire
+			function fire(cb) {
+				var err = result[0], val = result[1];
+				try {
+					return err instanceof Error || result.length === cb.length ? cb.apply(ctx, result) :
+						// normal node style callback
+						result.length === 2 ? cb.call(ctx, err, val) :
+						// fs.exists like callback, arguments[0] is value
+						result.length === 1 ? cb.call(ctx, null, result[0]) :
+						// unknown callback
+						result.length === 0 ? cb.call(ctx) :
+						// child_process.exec like callback
+						cb.call(ctx, null, slice.call(result, err == null ? 1 : 0));
+				} catch (e) { cb.call(ctx, e); }
+			} // fire
+		}; // thunkified
+	} // thunkify
+
+	// promisifyAll(object, options)
+	function promisifyAll(object, options) {
+		var keys = [];
+		if (Object.getOwnPropertyNames) keys = Object.getOwnPropertyNames(object);
+		else if (Object.keys) keys = Object.keys(object);
+		else for (var method in object) if (object.hasOwnProperty(method)) keys.push(i);
+
+		keys.forEach(function (method) {
+			if (typeof object[method] === 'function' &&
+					!object[method].promisified &&
+					!object[method].thunkified)
+				promisify(object, method, options);
+		});
+		return object;
+	}
+
+	// thunkifyAll(object, options)
+	function thunkifyAll(object, options) {
+		var keys = [];
+		if (Object.getOwnPropertyNames) keys = Object.getOwnPropertyNames(object);
+		else if (Object.keys) keys = Object.keys(object);
+		else for (var method in object) if (object.hasOwnProperty(method)) keys.push(i);
+
+		keys.forEach(function (method) {
+			if (typeof object[method] === 'function' &&
+					!object[method].promisified &&
+					!object[method].thunkified)
+				thunkify(object, method, options);
+		});
+		return object;
+	}
+
+
+	/*
+	var p1 = Promise.reject(new Error);
+	setTimeout(function () {
+		p1.catch(function () {});
+	}, 1);
+	var p2 = Promise.reject(new Error).then(function () {});
+	setTimeout(function () {
+		p2.catch(function () {});
+	}, 1);
+	*/
+
+
+	if (!global.Promise) global.Promise = Promise;
+	if (!global.PromiseLight) global.PromiseLight = Promise;
+	setValue(Promise, 'Promise', Promise);
+	setValue(Promise, 'PromiseLight', Promise);
+
+	if (typeof module === 'object' && module && module.exports)
+		module.exports = Promise;
+
+	return Promise;
+
+}(Function('return this')(), typeof Promise === 'function' ? Promise : null);
