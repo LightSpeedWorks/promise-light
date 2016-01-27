@@ -254,7 +254,7 @@ this.PromiseLight = function () {
 		}
 	} // wrap
 	setValue(PromiseLight, 'wrap',     wrap);
-	setValue(PromiseLight, 'thunkify', wrap);
+	//setValue(PromiseLight, 'thunkify', wrap);
 
 	// PromiseLight.resolve(val)
 	setValue(PromiseLight, 'resolve', function resolve(val) {
