@@ -289,6 +289,17 @@ void function (global, PromiseOrg) {
 	function $$callback(thunk, err, val) {
 		return err ? $$reject(thunk, err) : $$resolve(thunk, val);
 	}
+	// thunk.$$callback2(err, val, ...)
+	function $$callback2(err, val) {
+		switch (arguments.length) {
+			case 2: return err instanceof Error ? $$reject(this, err) : $$resolve(this, val);
+			case 1: return err instanceof Error ? $$reject(this, err) : $$resolve(this, err);
+			case 0: return $$resolve(this);
+			default: return err instanceof Error ?
+				$$reject(this, err) :
+				$$resolve(this, [].slice.call(arguments, 1));
+		}
+	}
 
 	// $$fire(thunk)
 	function $$fire(thunk) {
@@ -332,7 +343,7 @@ void function (global, PromiseOrg) {
 				r.then(
 					function (v) { return $$resolve(thunk, v); },
 					function (e) { return $$reject(thunk, e); });
-			else r(function (e, v) { return $$callback(thunk, e, v); });
+			else r(function () { return $$callback2.apply(thunk, arguments); });
 		}
 	};
 
