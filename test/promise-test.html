@@ -5,44 +5,51 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta http-equiv="Expires" content="Thu, 01 Dec 1994 16:00:00 GMT">
 
-<script>
-this.$debug = true;
-</script>
-<script src="../lib/print.js"></script>
-<script>
-this.console = this.console || $print;
-var c = this.$print || this.console;
-c('$print');
-c.log('console.log');
-c.info('console.info');
-c.warn('console.warn');
-c.error('console.error');
-</script>
+<script src="console-to-window.js"></script>
 
 <script src="../work/promise-light4.js"></script>
 <script>
 this.PromiseLight4 = this.PromiseLight;
+this.PromiseLight = undefined;
 if (this.Promise === this.PromiseLight4) this.Promise = undefined;
-c.log('PromiseLight4', this.PromiseLight4.name);
+console.log('PromiseLight4', this.PromiseLight4.name);
 </script>
 
 <script src="../work/promise-light6.js"></script>
 <script>
 this.PromiseLight6 = this.PromiseLight;
+this.PromiseLight = undefined;
 if (this.Promise === this.PromiseLight6) this.Promise = undefined;
-c.log('PromiseLight6', this.PromiseLight6.name);
+console.log('PromiseLight6', this.PromiseLight6.name);
 </script>
 
 <script src="../work/promise-light8.js"></script>
 <script>
 this.PromiseLight8 = this.PromiseLight;
+this.PromiseLight = undefined;
 if (this.Promise === this.PromiseLight8) this.Promise = undefined;
-c.log('PromiseLight8', this.PromiseLight8.name);
+console.log('PromiseLight8', this.PromiseLight8.name);
+</script>
+
+<script src="../work/promise-light-b.js"></script>
+<script>
+this.PromiseLightB = this.PromiseLight;
+this.PromiseLight = undefined;
+if (this.Promise === this.PromiseLightB) this.Promise = undefined;
+console.log('PromiseLightB', this.PromiseLightB.name);
+</script>
+
+<script src="../work/promise-light-a.js"></script>
+<script>
+this.PromiseLightA = this.PromiseThunk;
+this.PromiseThunk = undefined;
+if (this.Promise === this.PromiseLightA) this.Promise = undefined;
+console.log('PromiseLightA', this.PromiseLightA.name);
 </script>
 
 <script src="../promise-light.js"></script>
-<script src="../lib/assert.js"></script>
-<script src="../lib/describe-it.js"></script>
+<script src="assert.js"></script>
+<script src="describe-it.js"></script>
 <script>
 this.bluebird = null;
 this.require = function require() { return null; };
@@ -51,20 +58,20 @@ describe('describe1', function () {
 		var p = new PromiseLight(function (res, rej) {
 			res('ok');
 		});
-		c.info('describe1 - it1 - 1 - ' + p);
+		console.info('describe1 - it1 - 1 - ' + p);
 		p = p.then(
-			function (v) { c.info('it1 ok? ' + v); return 'ok1'; },
-			function (e) { c.error('it1 err? ' + e); return 'err1'; });
-		c.info('describe1 - it1 - 2 - ' + p);
+			function (v) { console.info('it1 ok? ' + v); return 'ok1'; },
+			function (e) { console.error('it1 err? ' + e); return 'err1'; });
+		console.info('describe1 - it1 - 2 - ' + p);
 		return p;
 	});
 	it('it2', function () {
 		var p = PromiseLight.resolve('ok');
-		c.info('describe1 - it2 - 1 - ' + p);
+		console.info('describe1 - it2 - 1 - ' + p);
 		p = p.then(
-			function (v) { c.info('it2 ok? ' + v); return 'ok2'; },
-			function (e) { c.error('it2 err? ' + e); return 'err2'; });
-		c.info('describe1 - it2 - 2 - ' + p);
+			function (v) { console.info('it2 ok? ' + v); return 'ok2'; },
+			function (e) { console.error('it2 err? ' + e); return 'err2'; });
+		console.info('describe1 - it2 - 2 - ' + p);
 		return p;
 	});
 });
