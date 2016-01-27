@@ -451,7 +451,7 @@ void function (global, PromiseOrg) {
 							// unknown callback
 							arguments.length === 0 ? res() :
 							// child_process.exec like callback
-							res(slice.call(arguments, err == null ? 1 : 0));
+							res([].slice.call(arguments, err == null ? 1 : 0));
 					} catch (e) { rej(e); }
 				};
 				fn.apply(ctx, args);
@@ -534,7 +534,7 @@ void function (global, PromiseOrg) {
 						// unknown callback
 						result.length === 0 ? cb.call(ctx) :
 						// child_process.exec like callback
-						cb.call(ctx, null, slice.call(result, err == null ? 1 : 0));
+						cb.call(ctx, null, [].slice.call(result, err == null ? 1 : 0));
 				} catch (e) { cb.call(ctx, e); }
 			} // fire
 		}; // thunkified
