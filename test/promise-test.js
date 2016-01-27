@@ -538,10 +538,12 @@ void function (assert, describe, it,
 								 x !== 'prototype'  && x !== 'toString';
 				}
 				var keys = Object.getOwnPropertyNames(Promise).filter(f).sort().join(',');
+
+
 				assert(keys === 'accept,all,defer,race,reject,resolve' ||
 					keys === 'Promise,PromiseThunk,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,promisify,promisifyAll,race,reject,resolve,thunkify,thunkifyAll,wrap' ||
 					keys === 'Promise,PromiseLight,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,promisify,promisifyAll,race,reject,resolve,thunkify,thunkifyAll,wrap' ||
-					keys === 'Promise,PromiseLight,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve,thunkify,wrap' ||
+					keys === 'Promise,PromiseLight,accept,all,convert,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve,wrap' ||
 					keys === 'accept,all,defer,isIterable,isIterator,isPromise,makeArrayFromIterator,race,reject,resolve' ||
 					keys === '_asap,_setAsap,_setScheduler,all,race,reject,resolve' || // es6-promise
 					keys === 'all,race,reject,resolve',
@@ -621,6 +623,272 @@ void function (assert, describe, it,
 			}) || // it iterator
 			it('iterator promises not supported');
 
+			function nodeStyle(err, val) {
+				var cb = arguments[--arguments.length];
+				if (typeof cb !== 'function')
+					throw new TypeError('cb must be a function');
+				if (arguments.length < 2) val = undefined;
+				setTimeout(cb, 5, err, val); }
+
+			function existsStyle(val, cb) {
+				if (typeof cb !== 'function')
+					throw new TypeError('cb must be a function');
+				setTimeout(cb, 5, val);
+			}
+
+			function execStyle(err, val1, val2, cb) {
+				if (typeof cb !== 'function')
+					throw new TypeError('cb must be a function');
+				setTimeout(cb, 5, err, val1, val2);
+			}
+
+			Promise.thunkify &&
+			it('thunkify 1 val', function (done) {
+				var nodeStyleThunk = Promise.thunkify(nodeStyle);
+				nodeStyleThunk(null, 123)(function (err, val) {
+					try {
+						assert(err == null, 'err != null');
+						assert.equal(val, 123);
+						done();
+					} catch(e) { done(e); }
+				});
+			}); // thunkify 1
+
+			Promise.thunkify &&
+			it('thunkify 2 err', function (done) {
+				var nodeStyleThunk = Promise.thunkify(nodeStyle);
+				nodeStyleThunk(new Error('ng'))(function (err, val) {
+					try {
+						assert(val == null, 'val != null');
+						assert.equal(err.message, 'ng');
+						done();
+					} catch(e) { done(e); }
+				});
+			}); // thunkify 2
+
+			Promise.thunkify &&
+			it('thunkify 3 fs.extsts true', function (done) {
+				var existsStyleThunk = Promise.thunkify(existsStyle);
+				existsStyleThunk(true)(function (val) {
+					try {
+						assert.equal(val, true);
+						done();
+					} catch(e) { done(e); }
+				});
+			}); // thunkify 3
+
+			Promise.thunkify &&
+			it('thunkify 4 fs.extsts false', function (done) {
+				var existsStyleThunk = Promise.thunkify(existsStyle);
+				existsStyleThunk(false)(function (val) {
+					try {
+						assert.equal(val, false);
+						done();
+					} catch(e) { done(e); }
+				});
+			}); // thunkify 4
+
+			Promise.thunkify &&
+			it('thunkify 5 fs.extsts err, val', function (done) {
+				var existsStyleThunk = Promise.thunkify(existsStyle);
+				existsStyleThunk(true)(function (err, val) {
+					try {
+						assert(err == null, 'err != null');
+						assert.equal(val, true);
+						done();
+					} catch(e) { done(e); }
+				});
+			}); // thunkify 5
+
+			Promise.thunkify &&
+			it('thunkify 6 childProcess.exec err, val1, val2', function (done) {
+				var execStyleThunk = Promise.thunkify(execStyle);
+				execStyleThunk(null, 'val1', 'val2')(function (err, val1, val2) {
+					try {
+						assert(err == null, 'err != null');
+						assert.equal(val1, 'val1');
+						assert.equal(val2, 'val2');
+						done();
+					} catch(e) { done(e); }
+				});
+			}); // thunkify 6
+
+			Promise.promisify &&
+			it('promisify 1 val', function (done) {
+				var nodeStylePromise = Promise.promisify(nodeStyle);
+				var p = nodeStylePromise(null, 123);
+				var n = 0;
+				if (typeof p === 'function')
+				++n, p(function (err, val) {
+					try {
+						assert(err == null, 'err != null');
+						assert.equal(val, 123);
+						end();
+					} catch(e) { done(e); }
+				});
+				++n, p.then(
+					function (val) {
+						try {
+							assert.equal(val, 123);
+							end();
+						} catch(e) { done(e); }
+					},
+					done);
+				function end() { --n || done(); }
+			}); // promisify 1
+
+			Promise.promisify &&
+			it('promisify 2 err', function (done) {
+				var nodeStylePromise = Promise.promisify(nodeStyle);
+				var p = nodeStylePromise(new Error('ng'));
+				var n = 0;
+				if (typeof p === 'function')
+				++n, p(function (err, val) {
+					try {
+						assert(val == null, 'val != null');
+						assert.equal(err.message, 'ng');
+						end();
+					} catch(e) { done(e); }
+				});
+				++n, p.then(
+					function (val) { done(new Error('ng')); },
+					function (err) {
+						try {
+							assert.equal(err.message, 'ng');
+							end();
+						} catch(e) { done(e); }
+					});
+				function end() { --n || done(); }
+			}); // promisify 2
+
+			function existsStyle(val, cb) {
+				if (typeof cb !== 'function')
+					throw new TypeError('cb must be a function');
+				setTimeout(cb, 5, val);
+			}
+
+			key !== 'bluebird' &&
+			Promise.promisify &&
+			it('promisify 3 fs.extsts true', function (done) {
+				var existsStylePromise = Promise.promisify(existsStyle);
+				var p = existsStylePromise(true);
+				var n = 0;
+				if (typeof p === 'function')
+				++n, p(function (val) {
+					try {
+						assert.equal(val, true);
+						end();
+					} catch(e) { done(e); }
+				});
+				++n, p.then(
+					function (val) {
+						try {
+							assert.equal(val, true);
+							end();
+						} catch(e) { done(e); }
+					},
+					done);
+				function end() { --n || done(); }
+			}); // promisify 3
+
+			key !== 'bluebird' &&
+			Promise.promisify &&
+			it('promisify 4 fs.extsts false', function (done) {
+				var existsStylePromise = Promise.promisify(existsStyle);
+				var p = existsStylePromise(false);
+				var n = 0;
+				if (typeof p === 'function')
+				++n, p(function (val) {
+					try {
+						assert.equal(val, false);
+						end();
+					} catch(e) { done(e); }
+				});
+				++n, p.then(
+					function (val) {
+						try {
+							assert.equal(val, false);
+							end();
+						} catch(e) { done(e); }
+					},
+					done);
+				function end() { --n || done(); }
+			}); // promisify 4
+
+			key !== 'bluebird' &&
+			Promise.promisify &&
+			it('promisify 5 fs.extsts err, val', function (done) {
+				var existsStylePromise = Promise.promisify(existsStyle);
+				var p = existsStylePromise(true);
+				var n = 0;
+				if (typeof p === 'function')
+				++n, p(function (err, val) {
+					try {
+						assert(err == null, 'err != null');
+						assert.equal(val, true);
+						end();
+					} catch(e) { done(e); }
+				});
+				++n, p.then(
+					function (val) {
+						try {
+							assert.equal(val, true);
+							end();
+						} catch(e) { done(e); }
+					},
+					done);
+				function end() { --n || done(); }
+			}); // promisify 5
+
+			Promise.promisify &&
+			it('promisify 6 childProcess.exec err, val1, val2', function (done) {
+				var execStylePromise = Promise.promisify(execStyle);
+				var p = execStylePromise(null, 'val1', 'val2');
+				var n = 0;
+				if (typeof p === 'function')
+				++n, p(function (err, val1, val2) {
+					try {
+						assert(err == null, 'err != null');
+						assert.equal(val1, 'val1');
+						assert.equal(val2, 'val2');
+						end();
+					} catch(e) { done(e); }
+				});
+				++n, p.then(
+					function (val) {
+						try {
+							assert.deepEqual(val, ['val1', 'val2']);
+							end();
+						} catch(e) { done(e); }
+					},
+					done);
+				function end() { --n || done(); }
+			}); // promisify 6
+
+			Promise.promisify &&
+			it('promisify 7 childProcess.exec err, val1, val2', function (done) {
+				var execStylePromise = Promise.promisify(execStyle);
+				var p = execStylePromise(null, 'val1', 'val2');
+				var n = 0;
+				if (typeof p === 'function')
+				++n, p(function (err, val) {
+					try {
+						assert(err == null, 'err != null');
+						assert.deepEqual(val, ['val1', 'val2']);
+						end();
+					} catch(e) { done(e); }
+				});
+				++n, p.then(
+					function (val) {
+						try {
+							assert.deepEqual(val, ['val1', 'val2']);
+							end();
+						} catch(e) { done(e); }
+					},
+					done);
+				function end() { --n || done(); }
+			}); // promisify 7
+
 			if (typeof Promise.resolve(1) !== 'function')
 				return;
 
@@ -637,7 +905,7 @@ void function (assert, describe, it,
 				assert.equal(++seq, 4);
 				p(function (err, val) {
 					assert.equal(val, 123);
-					assert.equal(err, undefined);
+					assert(err == null);
 					assert.equal(++seq, 6); });
 				assert.equal(++seq, 5);
 				return p;
@@ -651,7 +919,7 @@ void function (assert, describe, it,
 					try {
 						++seq;
 						assert.equal(val, 123);
-						assert.equal(err, undefined);
+						assert(err == null);
 						assert.equal(seq, 1);
 					} catch (e) { done(e); }
 					return 456;
@@ -661,7 +929,7 @@ void function (assert, describe, it,
 					try {
 						++seq;
 						assert.equal(val, 456);
-						assert.equal(err, undefined);
+						assert(err == null);
 						assert.equal(seq, 2);
 					} catch (e) { done(e); }
 					return Promise.resolve(789);
@@ -671,7 +939,7 @@ void function (assert, describe, it,
 					try {
 						++seq;
 						assert.equal(val, 789);
-						assert.equal(err, undefined);
+						assert(err == null);
 						assert.equal(seq, 3);
 						done();
 					} catch (e) { done(e); }
