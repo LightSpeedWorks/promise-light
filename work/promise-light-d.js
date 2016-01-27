@@ -440,7 +440,7 @@ void function (global, PromiseOrg) {
 		return promisified;
 		function promisified() {
 			var args = arguments;
-			return PromiseThunk(function (res, rej) {
+			return new Promise(function (res, rej) {
 				args[args.length++] = function callback(err, val) {
 					try {
 						return err instanceof Error ? rej(err) :
