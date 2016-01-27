@@ -19,7 +19,7 @@ if (typeof process !== 'undefined') {
 	});
 }
 
-void function ($module, $print, assert, describe, it,
+void function (assert, describe, it,
 		PromiseCore, PromiseLight, PromiseLightA, PromiseLightB,
 		PromiseLight4, PromiseLight6, PromiseLight8) {
 	'use strict';
@@ -626,8 +626,7 @@ void function ($module, $print, assert, describe, it,
 
 	}); // keys forEach
 
-}(this,
-		typeof $print   === 'function' ? $print   : require('../lib/print'),
+}(
 		typeof assert   === 'function' ? assert   : require('../lib/assert'),
 		typeof describe === 'function' ? describe : require('../lib/describe-it'),
 		typeof it       === 'function' ? it       : require('../lib/describe-it').it,

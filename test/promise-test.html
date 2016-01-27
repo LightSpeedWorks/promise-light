@@ -5,7 +5,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta http-equiv="Expires" content="Thu, 01 Dec 1994 16:00:00 GMT">
 
-<script src="console-to-window.js"></script>
+<script src="../lib/console-to-window.js"></script>
 
 <script src="../work/promise-light4.js"></script>
 <script>
@@ -48,8 +48,10 @@ console.log('PromiseLightA', this.PromiseLightA.name);
 </script>
 
 <script src="../promise-light.js"></script>
-<script src="assert.js"></script>
-<script src="describe-it.js"></script>
+
+<script src="../lib/assert.js"></script>
+<script src="../lib/describe-it.js"></script>
+
 <script>
 this.bluebird = null;
 this.require = function require() { return null; };
