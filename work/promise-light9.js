@@ -87,7 +87,7 @@ this.PromiseLight = function () {
 					promises.forEach(function (p, i) {
 						function complete(val) {
 							res[i] = val; if (--n === 0) resolve(res); }
-						if (p && p.then) //if (p instanceof PromiseLight || isPromise(p))
+						if (isPromise(p))
 							return p.then(complete, reject);
 						complete(p);
 					}); // promises.forEach
@@ -134,7 +134,7 @@ this.PromiseLight = function () {
 				err ? (rej ? rej(err) : err) :
 				res ? res(val) :
 				undefined;
-			if (r && r.then)
+			if (isPromise(r))
 				r.then(function (v) { return nxcb(null, v); }, nxcb);
 			else if (typeof r === 'function') r(nxcb);
 			else if (r instanceof Error) nxcb(r);
@@ -160,7 +160,7 @@ this.PromiseLight = function () {
 
 
 	function isPromise(p) {
-		return p instanceof PromiseLight || p instanceof Promise || (!!p && p.then);
+		return (typeof p === 'object' && p || typeof p === 'function') && typeof p.then === 'function';
 	}
 
 	function PromiseLightSolved(args) {
