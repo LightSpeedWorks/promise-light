@@ -44,15 +44,18 @@
 					return resolve();
 				}
 
-				new Promise(function (res, rej) {
+				new Promise(function (resolve, reject) {
 					try {
 						var arr = [];
 
 						for (var i = 0; i < N; ++i)
 							arr.push(Promise.resolve(1));
 
+						for (var i = 0; i < N; ++i)
+							arr.push(new Promise(function (resolve, reject) { resolve(1); }));
+
 						Promise.all(arr).then(function () {
-							res();
+							resolve();
 						});
 					} catch (e) { console.log(e.stack || e); }
 
