@@ -219,8 +219,7 @@ void function (global, PromiseOrg) {
 
 	// Promise.resolve(val)
 	function resolve(val) {
-		if ((typeof val === 'object' && val || typeof val === 'function') && typeof val.then === 'function')
-			return new PromiseConvert(val);
+		if (isPromise(val)) return new PromiseConvert(val);
 		return new PromiseResolved(val);
 	}
 
@@ -265,7 +264,7 @@ void function (global, PromiseOrg) {
 	function $$resolve(thunk, val) {
 		if (thunk.flag & PROMISE_FLAG_SOLVED) return;
 
-		if (typeof val === 'object' && val && typeof val.then === 'function')
+		if (isPromise(val))
 			return val.then(
 				function (v) { return $$resolve(thunk, v); },
 				function (e) { return $$reject(thunk, e); });
@@ -340,7 +339,11 @@ void function (global, PromiseOrg) {
 			else $$resolve(thunk, r);
 		},
 		'function': function (thunk, r) {
-			r(function (e, v) { return $$callback(thunk, e, v); });
+			if (typeof r.then === 'function')
+				r.then(
+					function (v) { return $$resolve(thunk, v); },
+					function (e) { return $$reject(thunk, e); });
+			else r(function (e, v) { return $$callback(thunk, e, v); });
 		}
 	};
 
@@ -377,7 +380,7 @@ void function (global, PromiseOrg) {
 				promises.forEach(function (p, i) {
 					function complete(val) {
 						res[i] = val; if (--n === 0) resolve(res); }
-					if (p instanceof Promise || isPromise(p))
+					if (isPromise(p))
 						return p.then(complete, reject);
 					complete(p);
 				}); // promises.forEach
@@ -394,7 +397,7 @@ void function (global, PromiseOrg) {
 		return new Promise(
 			function promiseRace(resolve, reject) {
 				promises.forEach(function (p) {
-					if (p instanceof Promise || isPromise(p))
+					if (isPromise(p))
 						return p.then(resolve, reject);
 					resolve(p);
 				}); // promises.forEach
@@ -404,7 +407,7 @@ void function (global, PromiseOrg) {
 
 	// isPromise(p)
 	function isPromise(p) {
-		return p instanceof Promise || p instanceof PromiseOrg || (!!p && p.then);
+		return (typeof p === 'object' && !!p || typeof p === 'function') && typeof p.then === 'function';
 	}
 
 	// isIterator(iter)
