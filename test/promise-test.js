@@ -621,6 +621,66 @@ void function (assert, describe, it,
 			}) || // it iterator
 			it('iterator promises not supported');
 
+			if (typeof Promise.resolve(1) !== 'function')
+				return;
+
+			// PromiseThunk test begins
+
+			it('PromiseThunk sequence', function () {
+				var seq = 0;
+				assert.equal(++seq, 1);
+				var p = new Promise(function (resolve, reject) {
+					assert.equal(++seq, 2);
+					resolve(123);
+					assert.equal(++seq, 3);
+				});
+				assert.equal(++seq, 4);
+				p(function (err, val) {
+					assert.equal(val, 123);
+					assert.equal(err, undefined);
+					assert.equal(++seq, 6); });
+				assert.equal(++seq, 5);
+				return p;
+			}); // it PromiseThunk sequence
+
+			it('PromiseThunk chain', function (done) {
+				var seq = 0;
+				Promise.resolve(123)
+				(function (err, val) {
+					if (err) return done(err);
+					try {
+						++seq;
+						assert.equal(val, 123);
+						assert.equal(err, undefined);
+						assert.equal(seq, 1);
+					} catch (e) { done(e); }
+					return 456;
+				})
+				(function (err, val) {
+					if (err) return done(err);
+					try {
+						++seq;
+						assert.equal(val, 456);
+						assert.equal(err, undefined);
+						assert.equal(seq, 2);
+					} catch (e) { done(e); }
+					return Promise.resolve(789);
+				})
+				(function (err, val) {
+					if (err) return done(err);
+					try {
+						++seq;
+						assert.equal(val, 789);
+						assert.equal(err, undefined);
+						assert.equal(seq, 3);
+						done();
+					} catch (e) { done(e); }
+				});
+				return;
+			}); // it PromiseThunk chain
+
+			// PromiseThunk test ends
+
 		}); // describe
 
 
