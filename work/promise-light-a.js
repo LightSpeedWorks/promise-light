@@ -350,7 +350,7 @@ void function (global, PromiseOrg) {
 			bomb.chain = undefined;
 			if (!thunk.head) thunk.tail = undefined;
 
-			fire(bomb.thunk, err, val, bomb.rej, bomb.res);
+			fire(bomb.thunk, err, val, bomb.rej, bomb.res, bomb.cb);
 
 			if ((thunk.flag & PROMISE_FLAG_UNHANDLED) ===
 					PROMISE_FLAG_UNHANDLED_REJECTION)
