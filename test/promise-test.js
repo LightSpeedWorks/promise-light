@@ -85,6 +85,16 @@ void function (assert, describe, it,
 			return arr;
 		};
 
+	// Array.prototype.reduce for ie8
+	if (!Array.prototype.reduce)
+		Array.prototype.reduce = function reduce(fn, val) {
+			var i = 0;
+			if (arguments.length > 1) val = arguments[i++];
+			for (var n = this.length; i < n; ++i)
+				val = fn(val, this[i], i, this);
+			return val;
+		};
+
 	var keys = Object.keys(promises);
 	keys.forEach(function (key) {
 		var Promise = promises[key];
