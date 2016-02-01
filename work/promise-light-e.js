@@ -3,6 +3,37 @@
 void function (global, PromiseOrg) {
 	'use strict';
 
+	var hasConsole = typeof console === 'object' && console !== null;
+	var hasConsoleWarn  = hasConsole && typeof console.warn  === 'function';
+	var hasConsoleError = hasConsole && typeof console.error === 'function';
+
+	// Object.keys for ie8
+	if (!Object.keys)
+		Object.keys = function keys(obj) {
+			var props = [];
+			for (var prop in obj)
+				if (obj.hasOwnProperty(prop))
+					props.push(prop);
+			return props;
+		},
+		hasConsoleWarn && console.warn('Undefined: Object.keys');
+
+	// Object.getOwnPropertyNames for ie8
+	if (!Object.getOwnPropertyNames)
+		Object.getOwnPropertyNames = Object.keys,
+		hasConsoleWarn && console.warn('Undefined: Object.getOwnPropertyNames');
+
+	// Array.prototype.reduce for ie8
+	if (!Array.prototype.reduce)
+		Array.prototype.reduce = function reduce(fn, val) {
+			var i = 0;
+			if (arguments.length <= 1) val = this[i++];
+			for (var n = this.length; i < n; ++i)
+				val = fn(val, this[i], i, this);
+			return val;
+		},
+		hasConsoleWarn && console.warn('Undefined: Array.prototype.reduce');
+
 	var COLORS = {red: '31', green: '32', purple: '35', cyan: '36', yellow: '33'};
 	var colors = Object.keys(COLORS).reduce(function (obj, k) {
 		obj[k] = typeof window === 'object' ? function (x) { return x; } :
@@ -277,13 +308,13 @@ void function (global, PromiseOrg) {
 	// $$reject(thunk, err)
 	function $$reject(thunk, err) {
 		if (thunk.flag & PROMISE_FLAG_RESOLVED)
-			return console.error(colors.yellow('* Resolved promise rejected: ') +
+			return hasConsoleError && console.error(colors.yellow('* Resolved promise rejected: ') +
 				thunk + '\n' + colors.purple('* ' + errmsg(err)));
 		if (thunk.flag & PROMISE_FLAG_REJECTED)
-			return console.error(colors.yellow('* Rejected promise rejected: ') +
+			return hasConsoleError && console.error(colors.yellow('* Rejected promise rejected: ') +
 				thunk + '\n' + colors.purple('* ' + errmsg(err)));
 
-		thunk.result = err;
+		thunk.result = (typeof err === 'object' && err instanceof Error) ? err : Error(err);
 		thunk.flag = PROMISE_FLAG_REJECTED;
 		nextExec(thunk, $$fire);
 	} // $$reject
@@ -309,7 +340,7 @@ void function (global, PromiseOrg) {
 		if (!(thunk.flag & PROMISE_FLAG_SOLVED)) return;
 
 		if (thunk.flag & PROMISE_FLAG_REJECTED) var err = thunk.result;
-		else var val = thunk.result;
+		else var val = thunk.result, err = null;
 
 		var bomb;
 		while (bomb = thunk.head) {
@@ -369,6 +400,7 @@ void function (global, PromiseOrg) {
 		thunk.flag |= PROMISE_FLAG_UNHANDLED_REJECTION;
 		if (typeof process === 'object' && process && typeof process.on === 'function')
 			process.emit('unhandledRejection', thunk.result, thunk);
+		hasConsoleError &&
 		console.error(colors.yellow('* UnhandledRejection: ') + thunk +
 			colors.purple('\n* ' + errmsg(thunk.result)));
 	}
@@ -377,6 +409,7 @@ void function (global, PromiseOrg) {
 	function $$rejectionHandled(thunk) {
 		if (typeof process === 'object' && process && typeof process.on === 'function')
 			process.emit('rejectionHandled', thunk);
+		hasConsoleError &&
 		console.error(colors.green('* RejectionHandled:   ') + thunk);
 	}
 
@@ -538,6 +571,7 @@ void function (global, PromiseOrg) {
 			arguments[arguments.length++] = function callback(err, val) {
 				if (result) {
 					if (err)
+						hasConsoleError &&
 						console.error(COLOR_ERROR + 'Unhandled callback error: ' + err2str(err) + COLOR_NORMAL);
 					return;
 				}
@@ -545,6 +579,7 @@ void function (global, PromiseOrg) {
 				result = arguments;
 				if (callbacks.length === 0 && err instanceof Error)
 					unhandled = true,
+					hasConsoleError &&
 					console.error(COLOR_ERROR + 'Unhandled callback error: ' + err2str(err) + COLOR_NORMAL);
 
 				for (var i = 0, n = callbacks.length; i < n; ++i)
@@ -560,6 +595,7 @@ void function (global, PromiseOrg) {
 
 				if (unhandled)
 					unhandled = false,
+					hasConsoleError &&
 					console.error(COLOR_ERROR + 'Unhandled callback error handled: ' + err2str(result[0]) + COLOR_NORMAL);
 
 				if (result) return fire(cb);

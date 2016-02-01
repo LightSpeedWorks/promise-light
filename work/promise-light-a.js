@@ -358,7 +358,7 @@ void function (global, PromiseOrg) {
 			return hasConsoleError && console.error(colors.yellow('* Rejected promise rejected: ') +
 				thunk + '\n' + colors.purple('* ' + errmsg(err)));
 
-		thunk.result = err;
+		thunk.result = (typeof err === 'object' && err instanceof Error) ? err : Error(err);
 		thunk.flag = PROMISE_FLAG_REJECTED;
 		nextExec(thunk, $$fire);
 	} // $$reject
@@ -384,7 +384,7 @@ void function (global, PromiseOrg) {
 		if (!(thunk.flag & PROMISE_FLAG_SOLVED)) return;
 
 		if (thunk.flag & PROMISE_FLAG_REJECTED) var err = thunk.result;
-		else var val = thunk.result;
+		else var val = thunk.result, err = null;
 
 		var bomb;
 		while (bomb = thunk.head) {
