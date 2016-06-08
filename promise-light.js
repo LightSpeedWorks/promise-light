@@ -498,7 +498,7 @@ void function (global, PromiseOrg) {
 				get: function () {
 					return this.hasOwnProperty(methodAsyncCached) &&
 						typeof this[methodAsyncCached] === 'function' ? this[methodAsyncCached] :
-						setValue(this, methodAsyncCached, promisify(this, this[method]));
+						(setValue(this, methodAsyncCached, promisify(this, this[method])), this[methodAsyncCached]);
 				},
 				configurable: true
 			});
@@ -549,7 +549,7 @@ void function (global, PromiseOrg) {
 				get: function () {
 					return this.hasOwnProperty(methodAsyncCached) &&
 						typeof this[methodAsyncCached] === 'function' ? this[methodAsyncCached] :
-						setValue(this, methodAsyncCached, thunkify(this, this[method]));
+						(setValue(this, methodAsyncCached, thunkify(this, this[method])), this[methodAsyncCached]);
 				},
 				configurable: true
 			});

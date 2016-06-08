@@ -1,15 +1,15 @@
 {
   "name": "promise-light",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "promise light version",
   "main": "promise-light.js",
   "dependencies": {},
   "devDependencies": {
-    "bluebird": "^3.2.1",
-    "es6-promise": ">=3.0.2",
-    "light-promise": ">=0.0.3",
-    "mocha": "^2.4.5",
-    "promise-thunk": "^0.1.13"
+    "bluebird": "^3.4.0",
+    "es6-promise": "^3.2.1",
+    "light-promise": "^0.1.1",
+    "mocha": "^2.5.3",
+    "promise-thunk": "^0.1.14"
   },
   "keywords": [
     "promise"
