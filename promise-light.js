@@ -6,6 +6,8 @@ void function (global, PromiseOrg) {
 	var hasConsole = typeof console === 'object' && console !== null;
 	var hasConsoleWarn  = hasConsole && typeof console.warn  === 'function';
 	var hasConsoleError = hasConsole && typeof console.error === 'function';
+	var COLOR_ERROR = '';
+	var COLOR_NORMAL = '';
 
 	// Object.keys for ie8
 	if (!Object.keys)
