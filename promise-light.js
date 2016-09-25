@@ -671,6 +671,10 @@ void function (global, PromiseOrg) {
 	}, 1);
 	*/
 
+	function err2str(err) {
+		return err.stack || (err + '');
+	}
+
 
 	if (!global.Promise) global.Promise = Promise;
 	if (!global.PromiseLight) global.PromiseLight = Promise;
