@@ -1,6 +1,6 @@
 {
   "name": "promise-light",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "promise light version",
   "main": "promise-light.js",
   "dependencies": {},
@@ -9,7 +9,7 @@
     "es6-promise": "^3.3.1",
     "light-promise": "^0.1.1",
     "mocha": "^2.5.3",
-    "promise-thunk": "^0.1.15"
+    "promise-thunk": ">=0.1.16"
   },
   "keywords": [
     "promise"
