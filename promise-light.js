@@ -369,7 +369,7 @@ void function (global, PromiseOrg) {
 		try {
 			var r =
 				err ? (rej ? rej(err) : err) :
-				res ? res(val) : undefined;
+				res ? res(val) : val;
 			firebytype[typeof r](thunk, r);
 		} catch (e) { $$reject(thunk, e); }
 	} // fire
