@@ -76,7 +76,7 @@ void function (global, PromiseOrg) {
 
 	// setProto(obj, proto)
 	var setProto = Object.setPrototypeOf ||
-		function (obj, proto) { obj.__proto__ = proto; };
+		function setProto(obj, proto) { obj.__proto__ = proto; };
 
 	// BaseClass.extend(proto, statics)
 	function extend(proto, statics) {
